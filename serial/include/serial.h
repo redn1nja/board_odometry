@@ -32,7 +32,9 @@ private:
     char m_raw_buf[100]{};
     void ConvertToHost();
     serial_data m_data{};
+    static inline  std::atomic_bool m_run = true;
 public:
+    static void Disable();
     SerialConn(const std::string& port, unsigned int baud_rate);
     ~SerialConn();
     void SetupReading();

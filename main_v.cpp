@@ -26,6 +26,7 @@ void signalHandler(int signum) {
 
 void frame_cb(void* frame, size_t size, uint64_t time_stamp, int is_iframe) {
     cv::Mat img(resolution.first, resolution.second, CV_8UC3, frame);
+
 }
 
 int main() {

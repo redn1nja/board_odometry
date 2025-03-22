@@ -26,6 +26,7 @@ void SerialConn::ReadData() {
 }
 
 void SerialConn::Close() {
+    Disable();
     m_port.close();
 }
 
@@ -44,7 +45,7 @@ void SerialConn::ConvertToHost() {
 
 void SerialConn::Loop() {
     SetupReading();
-    while (true) {
+    while (m_run) {
         ReadData();
     }
 }
@@ -63,4 +64,7 @@ std::ostream &operator<<(std::ostream &os, const serial_data &data) {
     return os;
 }
 
+void SerialConn::Disable() {
+    m_run = false;
+}
 
