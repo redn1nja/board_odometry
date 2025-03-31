@@ -1,11 +1,17 @@
 cmake_minimum_required(VERSION 3.15)
 project(odometry)
 
+set(LOCAL_BUILD ON)
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(lib/video)
 add_subdirectory(odometry)
 add_subdirectory(serial)
+
+
+if(LOCAL_BUILD)
+    add_subdirectory(local)
+endif()
 
 find_package(OpenCV REQUIRED)
 find_package(Threads REQUIRED)

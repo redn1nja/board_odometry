@@ -1,0 +1,2 @@
+/world/playpen/model/iris_with_gimbal/model/iris_with_standoffs/link/camera_link_ball/sensor/camera_stabilized/image
+/world/playpen/model/iris_with_gimbal/model/iris_with_standoffs/link/imu_link/sensor/imu_sensor/imu

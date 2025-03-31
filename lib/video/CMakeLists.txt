@@ -94,8 +94,6 @@ set (SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/RGA.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/Display.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/Common.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/Overlay.cc
-        ${CMAKE_CURRENT_SOURCE_DIR}/DrawingOverlay.cc
 )
 
 if (COMPILE_SHARED_LIBRARIES)
