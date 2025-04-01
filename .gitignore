@@ -1,4 +1,6 @@
 cmake-build-*
 b
+bin
+data
 .idea
 assets

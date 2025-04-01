@@ -6,13 +6,16 @@ Odometry::Odometry() = default;
 Odometry::~Odometry() = default;
 
 void Odometry::ProcessFrame(cv::Mat frame, bool draw) {
-    auto features = FeatureMatching(frame, m_features, draw);
-    m_offset = GetOffset(frame, m_features, features);
-    std::cout << "Offset: " << m_offset << "\n";
+    std::cout << m_features.size() << "\n";
+    if (m_features.size() < 5) {
+        FeatureDetection(frame);
+    }
+    auto [old_features, new_features] = FeatureMatching(frame, m_features, draw);
+    m_offset = GetOffset(frame, old_features, new_features);
     if (draw) DrawFrame();
     frame.copyTo(m_frame);
     frame.copyTo(m_draw_frame);
-    m_features = features;
+    m_features = new_features;
 }
 
 void Odometry::FeatureDetection(cv::Mat frame) {
@@ -20,10 +23,10 @@ void Odometry::FeatureDetection(cv::Mat frame) {
     frame.copyTo(m_draw_frame);
     cv::Mat gray;
     cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
-    goodFeaturesToTrack(gray, m_features, 500, 0.4, 8, cv::Mat(), 7, false, 0.04);
+    goodFeaturesToTrack(gray, m_features, 500, 0.25, 5, cv::Mat(), 7, false, 0.04);
 }
 
-std::vector<cv::Point2f> Odometry::FeatureMatching(cv::Mat frame, const std::vector<cv::Point2f>& points, bool draw) const {
+std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> Odometry::FeatureMatching(cv::Mat frame, const std::vector<cv::Point2f>& points, bool draw) const {
     cv::Mat gray_old;
     cv::Mat gray_mat;
     cvtColor(m_frame, gray_old, cv::COLOR_BGR2GRAY);
@@ -33,9 +36,11 @@ std::vector<cv::Point2f> Odometry::FeatureMatching(cv::Mat frame, const std::vec
     std::vector<float> err;
     calcOpticalFlowPyrLK(gray_old, gray_mat, points, new_points, status, err);
 
+    std::vector<cv::Point2f> good_old;
     std::vector<cv::Point2f> good_new;
     for (size_t i = 0; i < points.size(); i++) {
         if (status[i]) {
+            good_old.push_back(points[i]);
             good_new.push_back(new_points[i]);
             if (draw){
                 cv::line(m_draw_frame, new_points[i], points[i], cv::Scalar(0, 0, 255), 2);
@@ -43,12 +48,12 @@ std::vector<cv::Point2f> Odometry::FeatureMatching(cv::Mat frame, const std::vec
             }
         }
     }
-    return good_new;
+    return {good_old, good_new};
 }
 
 void Odometry::DrawFrame() const {
     imshow("Frame", m_draw_frame);
-    cv::waitKey(1000);
+    cv::waitKey(0);
 }
 
 cv::Vec2d Odometry::GetOffset(cv::Mat frame, const std::vector<cv::Point2f> &p1, const std::vector<cv::Point2f> &p2) const {
