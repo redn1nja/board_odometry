@@ -56,10 +56,11 @@ namespace nav {
         void push_buffer(const Attitude& attitude);
         [[nodiscard]] Attitude get_expontial_average() const;
         [[nodiscard]] Attitude get_mov_average() const;
-        static inline CameraParams K{960, 540, 1.2, 0.75};
+        static inline CameraParams m_K{960, 540, 1.2, 0.75};
         static constexpr double gamma = 0.9;
     public:
         explicit ImageCorrection() = default;
+        CameraParams K() { return m_K;}
         [[nodiscard]] cv::Mat transform_frame(cv::Mat in_frame, const Attitude& attitude) ;
 
     };

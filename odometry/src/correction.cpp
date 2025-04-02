@@ -40,7 +40,7 @@ namespace nav {
         cv::Mat roll = (cv::Mat_<double>(3, 3) << cos(attitude.roll), 0, sin(attitude.roll), 0, 1, 0, -sin(attitude.roll), 0, cos(attitude.roll));
 #endif // USE_MA
         rotation_matrix *= (roll * pitch);
-        cv::Mat Ki = K.get_intrinsic_matrix();
+        cv::Mat Ki = m_K.get_intrinsic_matrix();
         cv::Mat Kt = Ki.inv();
         cv::Mat H = Ki * rotation_matrix * Kt;
         cv::warpPerspective(in_frame, output, H, in_frame.size());

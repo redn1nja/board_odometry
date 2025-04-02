@@ -92,7 +92,7 @@ int main(int argc, char** argv) {
     while (cap.read(frame)) {
         std::getline(file, line);
         auto attitude = parse_str(line);
-        processor.calclulate_offsets(frame, attitude);
+        processor.calclulate_offsets(frame, attitude, 10);
         std::cout << "Total Offset: " << processor.total_offset() << "\n";
     }
     cap.release();

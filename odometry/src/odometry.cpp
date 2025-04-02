@@ -68,13 +68,17 @@ namespace nav {
         std::vector<cv::Point3f> p1_3d;
         std::vector<cv::Point3f> p2_3d;
         ptrdiff_t feature_size = static_cast<ptrdiff_t>(std::min(p1.size(), p2.size()));
-        std::transform(p1.begin(), p1.begin() + feature_size, std::back_inserter(p1_3d), [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
-        std::transform(p2.begin(), p2.begin() + feature_size, std::back_inserter(p2_3d), [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
+        std::transform(p1.begin(), p1.begin() + feature_size, std::back_inserter(p1_3d),
+            [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
+        std::transform(p2.begin(), p2.begin() + feature_size, std::back_inserter(p2_3d),
+            [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
 
-        cv::Point3f p1_mean = std::accumulate(p1_3d.begin(), p1_3d.end(), cv::Point3f(0, 0, 0), [](const cv::Point3f& p1, const cv::Point3f& p2) {
+        cv::Point3f p1_mean = std::accumulate(p1_3d.begin(), p1_3d.end(), cv::Point3f(0, 0, 0),
+            [](const cv::Point3f& p1, const cv::Point3f& p2) {
             return cv::Point3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
         });
-        cv::Point3f p2_mean = std::accumulate(p2_3d.begin(), p2_3d.end(), cv::Point3f(0, 0, 0), [](const cv::Point3f& p1, const cv::Point3f& p2) {
+        cv::Point3f p2_mean = std::accumulate(p2_3d.begin(), p2_3d.end(), cv::Point3f(0, 0, 0),
+            [](const cv::Point3f& p1, const cv::Point3f& p2) {
             return cv::Point3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
         });
         p1_mean /= static_cast<float>(p1.size());
@@ -93,8 +97,8 @@ namespace nav {
 
         cv::Mat H = p1_mat.t() * p2_mat;
 
-        cv::Mat U, Vt, W;
-        cv::SVD::compute(H, W, U, Vt);
+        cv::Mat U, Vt, _;
+        cv::SVD::compute(H, _, U, Vt);
 
         cv::Mat R = Vt.t() * U.t();
         if (determinant(R) < 0) {
