@@ -15,7 +15,7 @@ void signalHandler(int signum) {
     SerialConn::Disable();
 }
 
-ImageCorrection::Attitude parse_str(const std::string& str) {
+nav::ImageCorrection::Attitude parse_str(const std::string& str) {
     auto space = str.find(' ');
     double roll = std::stod(str.substr(0, space));
     double pitch = std::stod(str.substr(space + 1));
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
     cv::waitKey(1000);
 #endif
 
-    cv::VideoCapture cap("data/output.avi");
+    cv::VideoCapture cap("data/mod_output.avi");
     std::ifstream file("data/output.txt");
 
     if (!cap.isOpened() || !file.is_open()) {
@@ -88,12 +88,7 @@ int main(int argc, char** argv) {
     }
     cv::Mat frame;
     std::string line;
-    ImageProc processor;
-    for (int i = 0; i < 90; i++) {
-        cap.read(frame);
-        std::getline(file, line);
-    }
-
+    nav::ImageProc processor;
     while (cap.read(frame)) {
         std::getline(file, line);
         auto attitude = parse_str(line);

@@ -4,13 +4,14 @@
 #include "odometry.h"
 #include "correction.h"
 
-class ImageProc {
-    Odometry m_odometry;
-    ImageCorrection m_correction;
-    cv::Vec2d m_total_offset;
-public:
-    void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude);
-    cv::Vec2d total_offset() { return m_total_offset; }
-};
-
+namespace nav {
+    class ImageProc {
+        Odometry m_odometry;
+        ImageCorrection m_correction;
+        cv::Vec2d m_total_offset;
+    public:
+        void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude);
+        cv::Vec2d total_offset() { return m_total_offset; }
+    };
+} //namespace nav
 #endif //PROCESSOR_H
