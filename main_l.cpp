@@ -19,7 +19,7 @@ ImageCorrection::Attitude parse_str(const std::string& str) {
     auto space = str.find(' ');
     double roll = std::stod(str.substr(0, space));
     double pitch = std::stod(str.substr(space + 1));
-    return {roll, -pitch};
+    return {-roll, pitch};
 }
 
 int main(int argc, char** argv) {

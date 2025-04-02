@@ -6,16 +6,24 @@ Odometry::Odometry() = default;
 Odometry::~Odometry() = default;
 
 void Odometry::ProcessFrame(cv::Mat frame, bool draw) {
-    std::cout << m_features.size() << "\n";
-    if (m_features.size() < 5) {
+    if (m_frame.empty()) {
         FeatureDetection(frame);
+        return;
     }
     auto [old_features, new_features] = FeatureMatching(frame, m_features, draw);
+    if (new_features.size() < 5) {
+        FeatureDetection(frame);
+        std::cerr << "Not enough features detected\n";
+        return;
+    }
     m_offset = GetOffset(frame, old_features, new_features);
     if (draw) DrawFrame();
     frame.copyTo(m_frame);
     frame.copyTo(m_draw_frame);
     m_features = new_features;
+    if (m_features.size() < 5) {
+        FeatureDetection(frame);
+    }
 }
 
 void Odometry::FeatureDetection(cv::Mat frame) {
@@ -55,7 +63,6 @@ void Odometry::DrawFrame() const {
     imshow("Frame", m_draw_frame);
     cv::waitKey(0);
 }
-
 cv::Vec2d Odometry::GetOffset(cv::Mat frame, const std::vector<cv::Point2f> &p1, const std::vector<cv::Point2f> &p2) const {
 
     std::vector<cv::Point3f> p1_3d;
@@ -70,18 +77,19 @@ cv::Vec2d Odometry::GetOffset(cv::Mat frame, const std::vector<cv::Point2f> &p1,
     cv::Point3f p2_mean = std::accumulate(p2_3d.begin(), p2_3d.end(), cv::Point3f(0, 0, 0), [](const cv::Point3f& p1, const cv::Point3f& p2) {
         return cv::Point3f(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
     });
-    p1_mean /= static_cast<float>(p1_3d.size());
-    p2_mean /= static_cast<float>(p2_3d.size());
+    p1_mean /= static_cast<float>(p1.size());
+    p2_mean /= static_cast<float>(p2.size());
 
     std::for_each(p1_3d.begin(), p1_3d.end(), [p1_mean](cv::Point3f& p) {
         p = p - p1_mean;
     });
+
     std::for_each(p2_3d.begin(), p2_3d.end(), [p2_mean](cv::Point3f& p) {
         p = p - p2_mean;
     });
 
     cv::Mat p1_mat = cv::Mat(p1_3d).reshape(1);
-    cv::Mat p2_mat = cv::Mat(p2_3d).reshape(1);
+    cv::Mat p2_mat = cv::Mat(p1_3d).reshape(1);
 
     cv::Mat H = p1_mat.t() * p2_mat;
 
