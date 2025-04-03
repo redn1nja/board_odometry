@@ -3,9 +3,9 @@
 namespace nav {
     void ImageProc::calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude &attitude, double altitude) {
         auto corrected_frame = m_correction.transform_frame(frame, attitude);
-        m_odometry.ProcessFrame(corrected_frame, false);
+        m_odometry.ProcessFrame(corrected_frame);
         m_total_offset += pixel_to_meter(m_odometry.offset(), altitude);
-        m_odometry.DrawFrame();
+        // m_odometry.DrawFrame();
 
     }
 
@@ -16,4 +16,6 @@ namespace nav {
         double dy = 2 * offset[1] * roll_mult / m_correction.K().height;
         return {dx, dy};
     }
+
+
 } //namespace nav

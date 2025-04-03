@@ -11,9 +11,10 @@ namespace nav {
             return;
         }
         auto [old_features, new_features] = FeatureMatching(frame, m_features, draw);
-        if (new_features.size() < 5) {
+        if (new_features.empty()) {
             FeatureDetection(frame);
             std::cerr << "Not enough features detected\n";
+            m_offset = {0,0};
             return;
         }
         m_offset = GetOffset(frame, old_features, new_features);
@@ -31,7 +32,7 @@ namespace nav {
         frame.copyTo(m_draw_frame);
         cv::Mat gray;
         cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
-        goodFeaturesToTrack(gray, m_features, 500, 0.25, 5, cv::Mat(), 7, false, 0.04);
+        goodFeaturesToTrack(gray, m_features, 500, 0.1, 2, cv::Mat(), 7, false, 0.04);
     }
 
     std::pair<std::vector<cv::Point2f>, std::vector<cv::Point2f>> Odometry::FeatureMatching(cv::Mat frame, const std::vector<cv::Point2f>& points, bool draw) const {
@@ -47,7 +48,7 @@ namespace nav {
         std::vector<cv::Point2f> good_old;
         std::vector<cv::Point2f> good_new;
         for (size_t i = 0; i < points.size(); i++) {
-            if (status[i]) {
+            if (status[i] && err[i] < 10) {
                 good_old.push_back(points[i]);
                 good_new.push_back(new_points[i]);
                 if (draw){
@@ -107,7 +108,7 @@ namespace nav {
         }
         cv::Mat t = cv::Mat(p2_mean) - R * cv::Mat(p1_mean);
 
-        return {t.at<float>(0, 0), t.at<float>(1, 0)};
+        return {-t.at<float>(0, 0), -t.at<float>(1, 0)};
     }
 
     cv::Point2f Odometry::computeAverageMatchOffset(const std::vector<cv::Point2f>& ref_features) const {

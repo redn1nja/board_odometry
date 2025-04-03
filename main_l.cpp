@@ -19,7 +19,7 @@ nav::ImageCorrection::Attitude parse_str(const std::string& str) {
     auto space = str.find(' ');
     double roll = std::stod(str.substr(0, space));
     double pitch = std::stod(str.substr(space + 1));
-    return {-roll, pitch};
+    return {roll, -pitch};
 }
 
 int main(int argc, char** argv) {
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
         while (cap.read(frame)) {
             // std::cout << conn.GetData();
             odometry.ProcessFrame(frame);
-            if зроблений (cv::waitKey(30) >= 0) {
+            if (cv::waitKey(30) >= 0) {
                 break;
             }
         }
@@ -79,8 +79,13 @@ int main(int argc, char** argv) {
     cv::waitKey(1000);
 #endif
 
-    cv::VideoCapture cap("data/mod_output.avi");
-    std::ifstream file("data/output.txt");
+    if (argc != 3) {
+        std::cerr << "Usage: " << argv[0] << " <video_path> <attitude_file>\n";
+        return 1;
+    }
+
+    cv::VideoCapture cap(argv[1]);
+    std::ifstream file(argv[2]);
 
     if (!cap.isOpened() || !file.is_open()) {
         std::cerr << "Error opening video file\n";
