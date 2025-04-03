@@ -10,8 +10,11 @@ namespace nav {
             FeatureDetection(frame);
             return;
         }
+        if (m_features.size() < 10) {
+            FeatureDetection(frame);
+        }
         auto [old_features, new_features] = FeatureMatching(frame, m_features, draw);
-        if (new_features.empty()) {
+        if (new_features.size() < 10) {
             FeatureDetection(frame);
             std::cerr << "Not enough features detected\n";
             m_offset = {0,0};
