@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     }
     cv::Mat frame;
     std::string line;
-    nav::ImageProc processor;
+    nav::ImageProc<nav::ORBOdometry> processor;
     while (cap.read(frame)) {
         std::getline(file, line);
         auto attitude = parse_str(line);

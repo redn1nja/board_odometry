@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 find_package(OpenCV REQUIRED)
 
 add_library(navigation SHARED
-    src/odometry.cpp src/correction.cpp src/processor.cpp)
+    src/odometry.cpp src/orb_odometry.cpp src/flow_odometry.cpp src/correction.cpp src/processor.cpp)
 
 target_include_directories(navigation PRIVATE ${OpenCV_INCLUDE_DIRS})
 include_directories(navigation PRIVATE include)
