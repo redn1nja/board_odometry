@@ -8,24 +8,12 @@ namespace nav {
             feature_detection(frame);
             return;
         }
-        if (m_features.size() < 4) {
-            feature_detection(frame);
-        }
         auto [old_features, new_features] = feature_matching(frame, m_features, draw);
-        if (new_features.size() < 4) {
-            feature_detection(frame);
-            std::cerr << "Not enough features detected\n";
-            // m_offset = {0,0};
-            return;
-        }
         m_offset = get_offset(old_features, new_features);
         if (draw) draw_frame();
         frame.copyTo(m_frame);
         frame.copyTo(m_draw_frame);
-        m_features = new_features;
-        if (m_features.size() < 5) {
-            feature_detection(frame);
-        }
+        feature_detection(frame);
     }
 
     void FlowOdometry::feature_detection(cv::Mat frame) {
@@ -33,7 +21,7 @@ namespace nav {
         frame.copyTo(m_draw_frame);
         cv::Mat gray;
         cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
-        goodFeaturesToTrack(gray, m_features, 500, 0.1, 2, cv::Mat(), 7, false, 0.04);
+        goodFeaturesToTrack(gray, m_features, 1000, 0.1, 2, cv::Mat(), 7, false, 0.04);
     }
 
     std::pair<FlowOdometry::FeatureVector, FlowOdometry::FeatureVector> FlowOdometry::feature_matching(cv::Mat frame, const FeatureVector &points, bool draw) {
@@ -49,16 +37,30 @@ namespace nav {
         FeatureVector good_old;
         FeatureVector good_new;
         for (size_t i = 0; i < points.size(); i++) {
-            if (status[i] && err[i] < 10) {
+            if (status[i]) {
                 good_old.push_back(points[i]);
                 good_new.push_back(new_points[i]);
-                if (draw){
-                    line(m_draw_frame, new_points[i], points[i], cv::Scalar(0, 0, 255), 2);
-                    circle(m_draw_frame, new_points[i], 3, cv::Scalar(0, 255, 0), -1);
-                }
             }
         }
-        return {good_old, good_new};
+        cv::Mat inliers_mask;
+        FeatureVector inliers_old;
+        FeatureVector inliers_new;
+
+        cv::Mat H = findHomography(good_old, good_new, cv::RANSAC, 3, inliers_mask);
+        for (size_t i = 0; i < inliers_mask.rows; i++) {
+            if (inliers_mask.at<uchar>(i)) {
+                inliers_old.push_back(good_old[i]);
+                inliers_new.push_back(good_new[i]);
+            }
+        }
+        if (draw) {
+            for (size_t i = 0; i < inliers_old.size(); i++) {
+                cv::line(m_draw_frame, inliers_old[i], inliers_new[i], cv::Scalar(0, 255, 0), 2);
+                cv::circle(m_draw_frame, inliers_new[i], 5, cv::Scalar(0, 0, 255), -1);
+            }
+        }
+        std::cout << "Inlier ratio: " << static_cast<double>(inliers_old.size()) / static_cast<double>(good_old.size()) << "\n";
+        return {inliers_old, inliers_new};
     }
 
     cv::Vec2d FlowOdometry::get_offset(const FeatureVector &p1, const FeatureVector &p2) {

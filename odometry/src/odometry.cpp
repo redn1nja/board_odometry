@@ -43,7 +43,7 @@ namespace nav {
         }
         cv::Mat t = cv::Mat(p2_mean) - R * cv::Mat(p1_mean);
 
-        return {-t.at<float>(0, 0), -t.at<float>(1, 0)};
+        return { - t.at<float>(0, 0), t.at<float>(1, 0) * m_svd_mode};
     }
 
 

@@ -4,7 +4,7 @@
 namespace nav {
 
     ORBOdometry::ORBOdometry() {
-        m_orb = cv::ORB::create(1000, 1.2f, 8, 31, 0, 2, cv::ORB::HARRIS_SCORE, 31);
+        m_orb = cv::ORB::create(1000, 1.2f, 8, 15, 0, 2, cv::ORB::HARRIS_SCORE, 15);
         m_matcher = cv::FlannBasedMatcher();
     }
 
@@ -13,38 +13,58 @@ namespace nav {
         frame.copyTo(m_draw_frame);
         cv::Mat gray;
         cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
+        m_features.clear();
+        m_descriptors = cv::Mat();
         m_orb->detectAndCompute(gray, cv::Mat(), m_features, m_descriptors);
         m_descriptors.convertTo(m_descriptors, CV_32F);
     }
 
-    std::pair<ORBOdometry::FeatureVector, ORBOdometry::FeatureVector> ORBOdometry::feature_matching(cv::Mat frame, const FeatureVector &points, bool draw) const {
-        std::vector<cv::KeyPoint> new_keypoints;
+    std::pair<ORBOdometry::FeatureVector, ORBOdometry::FeatureVector> ORBOdometry::feature_matching(cv::Mat frame, const FeatureVector &points, bool draw) {
+        FeatureVector new_keypoints;
         cv::Mat new_descriptors;
         cv::Mat gray_mat;
         std::vector<cv::DMatch> matches;
         cvtColor(frame, gray_mat, cv::COLOR_BGR2GRAY);
         m_orb->detectAndCompute(gray_mat, cv::Mat(), new_keypoints, new_descriptors);
-        // m_orb->compute(gray_mat, new_keypoints, new_descriptors);
 
         new_descriptors.convertTo(new_descriptors, CV_32F);
         m_matcher.match(m_descriptors, new_descriptors, matches);
-        // matches.end() = std::remove_if(matches.begin(), matches.end(), [](const cv::DMatch& m) {
-        //     return m.distance > 100;
-        // });
-        FeatureVector good_old;
-        FeatureVector good_new;
-        for (const auto& match : matches) {
-            if (match.distance < 30) {
-                good_old.push_back(points[match.queryIdx]);
-                good_new.push_back(new_keypoints[match.trainIdx]);
-                if (draw) {
-                    cv::line(m_draw_frame, new_keypoints[match.trainIdx].pt, points[match.queryIdx].pt, cv::Scalar(0, 0, 255), 2);
-                    cv::circle(m_draw_frame, new_keypoints[match.trainIdx].pt, 3, cv::Scalar(0, 255, 0), -1);
-                }
+        std::sort(matches.begin(), matches.end(), [](const cv::DMatch& a, const cv::DMatch& b) {
+            return a.distance < b.distance;
+        });
+
+        cv::Mat inliers_mask;
+        std::vector<cv::DMatch> good_matches;
+        std::vector<cv::KeyPoint> new_keypoints_filtered;
+        std::vector<cv::KeyPoint> points_filtered;
+
+        std::vector<cv::Point2f> points_2d;
+        std::vector<cv::Point2f> new_points_2d;
+
+        cv::Mat good_descriptors;
+
+        std::transform(matches.begin(), matches.end(), std::back_inserter(points_2d),
+            [&points](const cv::DMatch& p) { return points[p.queryIdx].pt; });
+        std::transform(matches.begin(), matches.end(), std::back_inserter(new_points_2d),
+            [&new_keypoints](const cv::DMatch& p) { return new_keypoints[p.trainIdx].pt; });
+
+        cv::Mat H = findHomography(points_2d, new_points_2d, cv::RANSAC, 3, inliers_mask);
+        for (size_t i = 0; i < inliers_mask.rows; i++) {
+            if (inliers_mask.at<uchar>(i)) {
+                good_matches.push_back(matches[i]);
+                new_keypoints_filtered.push_back(new_keypoints[matches[i].trainIdx]);
+                points_filtered.push_back(points[matches[i].queryIdx]);
+                good_descriptors.push_back(m_descriptors.row(matches[i].queryIdx));
             }
         }
-        std::cout << good_old.size() << "\n";
-        return {good_old, good_new};
+
+        if(draw) {
+            drawMatches(m_frame, points, frame, new_keypoints
+                ,good_matches, m_draw_frame);
+        }
+        std::cout << good_matches.size() << "\n";
+        m_descriptors = std::move(good_descriptors);
+        return {points_filtered, new_keypoints_filtered};
     }
 
     void ORBOdometry::process_frame(cv::Mat frame, bool draw) {
@@ -67,9 +87,7 @@ namespace nav {
         frame.copyTo(m_frame);
         frame.copyTo(m_draw_frame);
         m_features = new_features;
-        if (m_features.size() < 5) {
-            feature_detection(frame);
-        }
+        feature_detection(frame);
     }
 
     cv::Vec2d ORBOdometry::get_offset(const FeatureVector& p1, const FeatureVector& p2) {

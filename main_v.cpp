@@ -4,7 +4,6 @@
 #include "RGA.h"
 #include "Common.h"
 #include "Display.h"
-#include "DrawingOverlay.h"
 
 #include <iostream>
 #include <csignal>

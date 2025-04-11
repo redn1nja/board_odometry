@@ -4,6 +4,11 @@
 #include <opencv2/opencv.hpp>
 
 namespace nav {
+
+    enum class ROLL_MODE : short;
+    enum class PITCH_MODE: short;
+    enum class SVD_MODE : short ;
+
     class ImageCorrection {
     public:
         struct Attitude {
@@ -44,8 +49,8 @@ namespace nav {
             width(w), height(h),
             hfov(hfov), vfov(vfov)
             {
-                fx = w / (std::tan(hfov / 2));
-                fy = h / (std::tan(vfov / 2));
+                fx = w / (2 *std::tan(hfov / 2));
+                fy = h / (2 *std::tan(vfov / 2));
             }
             [[nodiscard]] cv::Mat get_intrinsic_matrix() const {
                 return (cv::Mat_<double>(3, 3) << fx, 0, width / 2, 0, fy, height / 2, 0, 0, 1);
@@ -58,11 +63,21 @@ namespace nav {
         [[nodiscard]] Attitude get_mov_average() const;
         static inline CameraParams m_K{960, 540, 1.2, 0.75};
         static constexpr double gamma = 0.9;
+        ROLL_MODE m_roll_mode;
+        PITCH_MODE m_pitch_mode;
     public:
         explicit ImageCorrection() = default;
         CameraParams K() { return m_K;}
-        [[nodiscard]] cv::Mat transform_frame(cv::Mat in_frame, const Attitude& attitude) ;
+        [[nodiscard]] cv::Mat transform_frame(cv::Mat in_frame, const Attitude& attitude);
 
+        void set_modes(ROLL_MODE r, PITCH_MODE p) {
+            m_roll_mode = r;
+            m_pitch_mode = p;
+        }
+        [[nodiscard]] cv::Mat get_intrinsic_matrix() const {
+            return m_K.get_intrinsic_matrix();
+
+        }
     };
 }//namespace nav
 #endif //CORRECTION_H
