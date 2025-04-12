@@ -139,8 +139,8 @@ int main(int argc, char** argv) {
     std::string out_path = argv[3];
 
     params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_Clear_dfov.txt");
-    full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_Clear_dfov.txt");
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_Clear2.txt");
+    // full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_Clear2.txt");
 
     return 0;
 

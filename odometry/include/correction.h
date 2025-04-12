@@ -61,7 +61,7 @@ namespace nav {
         void push_buffer(const Attitude& attitude);
         [[nodiscard]] Attitude get_expontial_average() const;
         [[nodiscard]] Attitude get_mov_average() const;
-        static inline CameraParams m_K{960, 540, 1.2, 0.75};
+        static inline CameraParams m_K{640, 480, 1.57, 1.29};
         static constexpr double gamma = 0.9;
         ROLL_MODE m_roll_mode;
         PITCH_MODE m_pitch_mode;

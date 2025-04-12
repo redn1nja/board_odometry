@@ -14,7 +14,7 @@ namespace nav {
             R *= (roll * pitch);
             cv::Mat acc_mat = cv::Mat(acc).reshape(1);
             cv::Mat acc_rotated = R * acc_mat;
-            cv::Vec3d acc_normalized = {acc_rotated.at<double>(0, 0), acc_rotated.at<double>(1, 0), acc_rotated.at<double>(2, 0) - m_g};
+            cv::Vec3d acc_normalized = {acc_rotated.at<double>(0, 0), acc_rotated.at<double>(1, 0), acc_rotated.at<double>(2, 0) + m_g};
             return acc_normalized;
         }
     };

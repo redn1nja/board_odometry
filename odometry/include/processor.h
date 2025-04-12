@@ -20,6 +20,7 @@ namespace nav {
         Odom m_odometry;
         ImageCorrection m_correction;
         cv::Vec2d m_total_offset;
+        AccelOdometryFilter m_ekf;
 
         ROLL_MODE m_roll_mode = ROLL_MODE::ROLL_POSITIVE;
         PITCH_MODE m_pitch_mode = PITCH_MODE::PITCH_POSITIVE;
@@ -27,16 +28,19 @@ namespace nav {
 
     public:
 
-        void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude, double altitude) {
+        void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude, const cv::Vec3d& acceleration, double altitude) {
             auto corrected_frame = m_correction.transform_frame(frame, attitude);
             m_odometry.process_frame(corrected_frame, false);
+            auto odometry = pixel_to_meter(m_odometry.offset(), altitude);
+            m_ekf.step(acceleration, odometry, attitude, 1 / 30);
             m_total_offset += pixel_to_meter(m_odometry.offset(), altitude);
         }
         cv::Vec2d pixel_to_meter(const cv::Vec2d& offset, double altitude) {
-            double pitch_mult = altitude * std::tan(m_correction.K().hfov / 2);
-            double roll_mult = altitude * std::tan(m_correction.K().vfov / 2);
-            double dx = 2 * offset[0] * pitch_mult / m_correction.K().width;
-            double dy = 2 * offset[1] * roll_mult / m_correction.K().height;
+            auto K = m_correction.K();
+            double h = altitude * std::tan(K.hfov / 2);
+            double v = altitude * std::tan(K.vfov / 2);
+            double dx = 2 * offset[0] * h / K.width;
+            double dy = 2 * offset[1] * v / K.height;
             return {dx, dy};
         }
         cv::Vec2d total_offset() { return m_total_offset; }
