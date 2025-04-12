@@ -28,12 +28,13 @@ namespace nav {
 
     public:
 
-        void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude, const cv::Vec3d& acceleration, double altitude) {
+        void calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude, const cv::Vec3d& acceleration, double dt, double altitude) {
             auto corrected_frame = m_correction.transform_frame(frame, attitude);
             m_odometry.process_frame(corrected_frame, false);
             auto odometry = pixel_to_meter(m_odometry.offset(), altitude);
-            m_ekf.step(acceleration, odometry, attitude, 1 / 30);
-            m_total_offset += pixel_to_meter(m_odometry.offset(), altitude);
+            auto corrected = m_ekf.step(acceleration, odometry, attitude, dt);
+            std::cout << "Correction vel: " << corrected << ", correction dist: " << corrected* dt << ", odometry: " << odometry << "\n";
+            m_total_offset += (corrected * dt);
         }
         cv::Vec2d pixel_to_meter(const cv::Vec2d& offset, double altitude) {
             auto K = m_correction.K();

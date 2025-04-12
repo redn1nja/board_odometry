@@ -6,6 +6,7 @@
 #include <fstream>
 #include <csignal>
 #include <chrono>
+#include "time.h"
 
 struct Attitude {
     double roll;
@@ -32,6 +33,7 @@ struct AngVel {
 
 struct Data {
     static inline size_t id=1;
+    double ts;
     Attitude attitude;
     LinAcc lin_acc;
     AngVel ang_vel;
@@ -54,8 +56,6 @@ std::ofstream output;
 cv::VideoWriter writer;
 volatile sig_atomic_t run = 1;
 std::atomic_bool image_rdy = false;
-std::atomic_bool imu_rdy = false;
-std::atomic_bool pose_rdy = false;
 
 
 void signal_handler(int signum) {
@@ -72,7 +72,6 @@ void camera_callback(const gz::msgs::Image& msg) {
 }
 
 void imu_callback(const gz::msgs::IMU& msg) {
-    if (!image_rdy) return;
     const auto& quat = msg.orientation();
 
     data.attitude.roll = atan2(2 * (quat.w() * quat.x() + quat.y() * quat.z()), 1 - 2 * (quat.x() * quat.x() + quat.y() * quat.y()));
@@ -86,17 +85,13 @@ void imu_callback(const gz::msgs::IMU& msg) {
     data.ang_vel.y = msg.angular_velocity().y();
     data.ang_vel.z = msg.angular_velocity().z();
 
-    imu_rdy = true;
 }
 
 void pose_callback(const gz::msgs::Pose_V& msg) {
-    if (!image_rdy) return;
-
     data.offset.x = msg.pose(82).position().x();
     data.offset.y = msg.pose(82).position().y();
     data.offset.z = msg.pose(82).position().z();
 
-    pose_rdy = true;
 }
 
 int main(int argc, char** argv) {
@@ -115,17 +110,20 @@ int main(int argc, char** argv) {
     node.Subscribe<gz::msgs::Image>(cam_topic, camera_callback);
     node.Subscribe<gz::msgs::IMU>(imu_topic, imu_callback);
     node.Subscribe<gz::msgs::Pose_V>(pose_topic, pose_callback);
-    CommaSeparatedWriter::write(output, "ID", "Roll", "Pitch", "LinAccX", "LinAccY", "LinAccZ",
+    CommaSeparatedWriter::write(output, "ID", "Stamp", "Roll", "Pitch", "LinAccX", "LinAccY", "LinAccZ",
                                 "AngVelX", "AngVelY", "AngVelZ", "PoseX", "PoseY", "PoseZ");
+
+    auto start = get_current_time_fenced();
+
     while (run) {
-        if(image_rdy && imu_rdy && pose_rdy) {
-            CommaSeparatedWriter::write(output, Data::id++, data.attitude.roll, data.attitude.pitch,
+        if(image_rdy) {
+            auto now = get_current_time_fenced();
+            data.ts = static_cast<double>(to_ms(now - start)) / 1000.0;
+            CommaSeparatedWriter::write(output, Data::id++, data.ts, data.attitude.roll, data.attitude.pitch,
                                         data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
                                         data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
                                         data.offset.x, data.offset.y, data.offset.z);
             image_rdy = false;
-            imu_rdy = false;
-            pose_rdy = false;
         }
     }
     output.close();

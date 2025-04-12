@@ -50,6 +50,7 @@ struct AngVel {
 
 struct Data {
     static inline size_t id=1;
+    double ts;
     nav::ImageCorrection::Attitude attitude;
     LinAcc lin_acc;
     AngVel ang_vel;
@@ -74,19 +75,24 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
     nav::ImageProc<T> processor;
     processor.set_modes(r, p, s);
     Data data;
-    std::array<std::string, 12> header;
+    std::array<std::string, 13> header;
     CommaSeparatedReader::read(file, header[0], header[1], header[2], header[3],
                                header[4], header[5], header[6], header[7],
-                               header[8], header[9], header[10], header[11]);
+                               header[8], header[9], header[10], header[11], header[12]);
     out_file << "[\n";
+    double dt = 0;
+    double stamp = 0;
     while (cap.read(frame)) {
         try {
-            CommaSeparatedReader::read(file, Data::id, data.attitude.roll, data.attitude.pitch,
+            CommaSeparatedReader::read(file, Data::id, data.ts, data.attitude.roll, data.attitude.pitch,
                                    data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
                                    data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
                                    data.offset.x, data.offset.y, data.offset.z);
+            cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, data.lin_acc.z};
+            dt = std::clamp(data.ts - stamp, 0.1, 0.2);
+            stamp = data.ts;
             cv::Vec2d gt = {data.offset.x, data.offset.y};
-            processor.calclulate_offsets(frame, data.attitude, data.offset.z);
+            processor.calclulate_offsets(frame, data.attitude, acceleratiion, dt, data.offset.z);
             std::cout << "Total Offset: " << processor.total_offset() << ", actual coordinates: " <<
                 gt << ", L2 error: " << eucldean(processor.total_offset(), gt) << "\n";
             auto off = processor.total_offset();
@@ -139,8 +145,7 @@ int main(int argc, char** argv) {
     std::string out_path = argv[3];
 
     params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_Clear2.txt");
-    // full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_Clear2.txt");
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_Clear1.txt");
 
     return 0;
 
