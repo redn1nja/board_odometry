@@ -14,7 +14,7 @@ pushd /home/ostap/ardupilot/
 
 popd
 
-sleep 80
+sleep 180
 ./bin/topics topics.txt output.txt output.avi
 
 killall ruby

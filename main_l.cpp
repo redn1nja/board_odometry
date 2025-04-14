@@ -88,6 +88,7 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                                    data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
                                    data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
                                    data.offset.x, data.offset.y, data.offset.z);
+            data.attitude.yaw = 1.57;
             cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, data.lin_acc.z};
             dt = std::clamp(data.ts - stamp, 0.1, 0.2);
             stamp = data.ts;

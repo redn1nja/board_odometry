@@ -14,27 +14,31 @@ namespace nav {
         struct Attitude {
             double roll;
             double pitch;
-            Attitude() : roll(0), pitch(0) {}
-            Attitude(double r, double p) : roll(r), pitch(p) {}
+            double yaw;
+            Attitude() : roll(0), pitch(0), yaw(0) {}
+            Attitude(double r, double p, double y) : roll(r), pitch(p), yaw(y) {}
             Attitude& operator-=(const Attitude& rhs) {
                 roll -= rhs.roll;
                 pitch -= rhs.pitch;
+                yaw -= rhs.yaw;
                 return *this;
             }
 
             Attitude& operator*= (double scalar) {
                 roll *= scalar;
                 pitch *= scalar;
+                yaw *= scalar;
                 return *this;
             }
 
             Attitude& operator+=(const Attitude& rhs) {
                 roll += rhs.roll;
                 pitch += rhs.pitch;
+                yaw += rhs.yaw;
                 return *this;
             }
 
-            [[nodiscard]] std::string str() const { return "Roll: " + std::to_string(roll) + " Pitch: " + std::to_string(pitch); }
+            [[nodiscard]] std::string str() const { return "Roll: " + std::to_string(roll) + " Pitch: " + std::to_string(pitch) + " Yaw: " + std::to_string(yaw); }
         };
 
         struct CameraParams {

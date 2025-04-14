@@ -32,6 +32,10 @@ namespace nav {
             auto corrected_frame = m_correction.transform_frame(frame, attitude);
             m_odometry.process_frame(corrected_frame, false);
             auto odometry = pixel_to_meter(m_odometry.offset(), altitude);
+            cv::Mat yaw = (cv::Mat_<double>(2, 2) << cos(attitude.yaw), -sin(attitude.yaw), sin(attitude.yaw), cos(attitude.yaw));
+            cv::Mat odom_mat = cv::Mat(odometry).reshape(1);
+            odom_mat = yaw * odom_mat;
+            odometry = {odom_mat.at<double>(0, 0), odom_mat.at<double>(1, 0)};
             auto corrected = m_ekf.step(acceleration, odometry, attitude, dt);
             std::cout << "Correction vel: " << corrected << ", correction dist: " << corrected* dt << ", odometry: " << odometry << "\n";
             m_total_offset += (corrected * dt);
