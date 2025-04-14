@@ -1,0 +1,3 @@
+[submodule "external/madgwick"]
+	path = external/madgwick
+	url = git@github.com:redn1nja/Madgwick_FW.git
