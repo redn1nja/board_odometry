@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/video)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/odometry/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/serial/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils)
 
 add_executable(vision_main main_v.cpp)
 add_executable(local_main main_l.cpp)
@@ -43,4 +44,4 @@ endif()
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 add_subdirectory(app)
-
+add_subdirectory(experiments)

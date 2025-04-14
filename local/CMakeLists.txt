@@ -10,6 +10,7 @@ find_package(OpenCV REQUIRED)
 
 add_executable(topics read_gz.cpp)
 target_include_directories(topics PRIVATE ${OpenCV_INCLUDE_DIRS})
+target_include_directories(topics PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../utils)
 target_link_libraries(topics ${OpenCV_LIBS})
 target_link_libraries(topics gz-transport12::core)
 
