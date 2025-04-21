@@ -6,11 +6,12 @@
 #include <fstream>
 #include <csignal>
 #include <chrono>
-#include "time.h"
+#include "times.h"
 
 struct Attitude {
     double roll;
     double pitch;
+    double yaw;
 };
 
 struct LinAcc {
@@ -76,6 +77,7 @@ void imu_callback(const gz::msgs::IMU& msg) {
 
     data.attitude.roll = atan2(2 * (quat.w() * quat.x() + quat.y() * quat.z()), 1 - 2 * (quat.x() * quat.x() + quat.y() * quat.y()));
     data.attitude.pitch = asin(2 * (quat.w() * quat.y() - quat.z() * quat.x()));
+    data.attitude.yaw = atan2(2 * (quat.w() * quat.z() + quat.x() * quat.y()), 1 - 2 * (quat.y() * quat.y() + quat.z() * quat.z()));
 
     data.lin_acc.x = msg.linear_acceleration().x();
     data.lin_acc.y = msg.linear_acceleration().y();
@@ -110,7 +112,7 @@ int main(int argc, char** argv) {
     node.Subscribe<gz::msgs::Image>(cam_topic, camera_callback);
     node.Subscribe<gz::msgs::IMU>(imu_topic, imu_callback);
     node.Subscribe<gz::msgs::Pose_V>(pose_topic, pose_callback);
-    CommaSeparatedWriter::write(output, "ID", "Stamp", "Roll", "Pitch", "LinAccX", "LinAccY", "LinAccZ",
+    CommaSeparatedWriter::write(output, "ID", "Stamp", "Roll", "Pitch", "Yaw", "LinAccX", "LinAccY", "LinAccZ",
                                 "AngVelX", "AngVelY", "AngVelZ", "PoseX", "PoseY", "PoseZ");
 
     auto start = get_current_time_fenced();
@@ -119,7 +121,7 @@ int main(int argc, char** argv) {
         if(image_rdy) {
             auto now = get_current_time_fenced();
             data.ts = static_cast<double>(to_ms(now - start)) / 1000.0;
-            CommaSeparatedWriter::write(output, Data::id++, data.ts, data.attitude.roll, data.attitude.pitch,
+            CommaSeparatedWriter::write(output, Data::id++, data.ts, data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
                                         data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
                                         data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
                                         data.offset.x, data.offset.y, data.offset.z);

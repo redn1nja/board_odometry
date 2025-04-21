@@ -15,3 +15,6 @@ target_compile_definitions(madgwick PUBLIC LOCAL_BUILD)
 
 target_link_libraries(imu_tests madgwick)
 target_link_libraries(imu_tests navigation)
+
+
+add_subdirectory(runner)

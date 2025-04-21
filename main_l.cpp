@@ -42,6 +42,19 @@ struct Data {
 
 constexpr std::string_view dev = "/dev/ttyACM0";
 
+static inline double rotate(double ang) {
+    return std::fmod(ang + 2 * M_PI, 2 * M_PI) - M_PI;
+}
+
+static inline double wrap(double ang, double max) {
+    return std::fmod(max + std::fmod(ang, max), max);
+}
+
+static inline double wrap_pi(double ang) {
+    return -M_PI + wrap(ang + M_PI, 2 * M_PI);
+}
+
+
 void signalHandler(int signum) {
     std::cout << "\nSIGINT received. Shutting down gracefully.\n";
     SerialConn::Disable();
@@ -53,34 +66,99 @@ double eucldean(const cv::Vec2d& a, const cv::Vec2d& b) {
 }
 
 template <typename T>
-void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav::SVD_MODE s, cv::VideoCapture& cap, std::ifstream& file) {
+void experiment2(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav::SVD_MODE s, cv::VideoCapture& cap, std::ifstream& file) {
     cv::Mat frame;
-    nav::ImageProc<T> processor;
+    cv::Mat Q = (cv::Mat_<double>(2, 2) << 0.2755, 0, 0, 0.2755);
+    cv::Mat R = (cv::Mat_<double>(2, 2) << 0.5, 0, 0, 0.5);
+    nav::ImageProc<T> processor(Q, R, false);
     processor.set_modes(r, p, s);
     Data data;
-    std::array<std::string, 13> header;
+    std::array<std::string, 14> header;
     CommaSeparatedReader::read(file, header[0], header[1], header[2], header[3],
                                header[4], header[5], header[6], header[7],
-                               header[8], header[9], header[10], header[11], header[12]);
+                               header[8], header[9], header[10], header[11], header[12], header[13]);
     out_file << "[\n";
     double dt = 0;
+    double last_stamp = 0;
     double stamp = 0;
+    int i = 0;
+
     while (cap.read(frame)) {
         try {
-            CommaSeparatedReader::read(file, Data::id, data.ts, data.attitude.roll, data.attitude.pitch,
-                                   data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
-                                   data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
-                                   data.offset.x, data.offset.y, data.offset.z);
-            data.attitude.yaw = 1.57;
-            cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, data.lin_acc.z};
-            dt = std::clamp(data.ts - stamp, 0.1, 0.2);
-            stamp = data.ts;
+            i++;
+
+            CommaSeparatedReader::read(file, Data::id, stamp, data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
+                data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
+                data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
+                data.offset.x, data.offset.y, data.offset.z);
+            dt = stamp - last_stamp;
+            last_stamp = stamp;
+            cv::Vec3d acceleratiion = {-data.lin_acc.x, -data.lin_acc.y, -data.lin_acc.z};
             cv::Vec2d gt = {data.offset.x, data.offset.y};
             processor.calclulate_offsets(frame, data.attitude, acceleratiion, dt, data.offset.z);
-            std::cout << "Total Offset: " << processor.total_offset() << ", actual coordinates: " <<
+            std::cout << i << "th Total Offset: " << processor.total_offset() << ", actual coordinates: " <<
+               gt << ", L2 error: " << eucldean(processor.total_offset(), gt) << "\n";
+            auto off = processor.total_offset();
+            CommaSeparatedWriter::write(out_file, "[" + std::to_string(off[0]), off[1], gt[0], gt[1], std::to_string(eucldean(off, gt)) + "]");
+        }
+        catch (const std::exception& ex) {
+            std::cerr << ex.what();
+        }
+    }
+    out_file << "]\n";
+
+}
+
+
+template <typename T>
+void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav::SVD_MODE s, cv::VideoCapture& cap, std::ifstream& file) {
+    cv::Mat frame;
+    cv::Mat Q = (cv::Mat_<double>(2,2) << 0.8, 0, 0, 0.2);
+    cv::Mat R = (cv::Mat_<double>(2,2) << 0.5, 0, 0, 0.5);
+    nav::ImageProc<T> processor(Q, R, false);
+    processor.set_modes(r, p, s);
+    Data data;
+    std::array<std::string, 14> header;
+    CommaSeparatedReader::read(file, header[0], header[1], header[2], header[3],
+                               header[4], header[5], header[6], header[7],
+                               header[8], header[9]);
+    out_file << "[\n";
+    double dt = 0;
+    int i = 0;
+    size_t start_it = 100;
+    size_t stop_it = 900;
+    while (cap.read(frame)) {
+
+        try {
+            i++;
+
+            CommaSeparatedReader::read(file,dt, data.offset.z, data.offset.x, data.offset.y,
+                data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
+                                   data.lin_acc.x, data.lin_acc.y, data.lin_acc.z);
+            if (i < start_it) {
+                continue;
+            }
+            if (i == start_it ) {
+                processor.set_start_offset({data.offset.x, data.offset.y});
+            }
+            dt *= 2 ;
+            data.attitude.roll = -rotate(data.attitude.roll);
+            if (i < 500) {
+                data.attitude.yaw = data.attitude.yaw + M_PI_2 ;
+            }
+            else if (i < 900) {
+                data.attitude.yaw = data.attitude.yaw + M_PI_2 + (M_PI / 12);
+            }
+            cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, data.lin_acc.z};
+            cv::Vec2d gt = {data.offset.x, data.offset.y};
+            processor.calclulate_offsets(frame, data.attitude, acceleratiion, dt, data.offset.z);
+            std::cout << i << "th Total Offset: " << processor.total_offset() << ", actual coordinates: " <<
                 gt << ", L2 error: " << eucldean(processor.total_offset(), gt) << "\n";
             auto off = processor.total_offset();
             CommaSeparatedWriter::write(out_file, "[" + std::to_string(off[0]), off[1], gt[0], gt[1], std::to_string(eucldean(off, gt)) + "]");
+            if (i > stop_it) {
+                break;
+            }
         }
         catch (const std::exception& ex) {
             std::cerr << ex.what();
@@ -111,7 +189,7 @@ void full_exp(params p, const std::string& cap_p, const std::string& file_p, con
         std::cerr << "Error opening file\n";
         return;
     }
-    experiment<T>(out_file, p.r, p.p, p.s, cap, file);
+    experiment2<T>(out_file, p.r, p.p, p.s, cap, file);
 
     file.close();
     cap.release();
@@ -127,9 +205,10 @@ int main(int argc, char** argv) {
     std::string cap_name = argv[1];
     std::string file_name = argv[2];
     std::string out_path = argv[3];
-
-    params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_Clear1.txt");
+    // params p_n {nav::ROLL_MODE::ROLL_POSITIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_NEGATIVE};
+    params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_POSITIVE , nav::SVD_MODE::SVD_POSITIVE};
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_test.txt");
+    full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_test.txt");
 
     return 0;
 

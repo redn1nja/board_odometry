@@ -59,7 +59,6 @@ namespace nav {
                 cv::circle(m_draw_frame, inliers_new[i], 5, cv::Scalar(0, 0, 255), -1);
             }
         }
-        std::cout << "Inlier ratio: " << static_cast<double>(inliers_old.size()) / static_cast<double>(good_old.size()) << "\n";
         return {inliers_old, inliers_new};
     }
 

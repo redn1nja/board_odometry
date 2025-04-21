@@ -4,8 +4,8 @@
 namespace nav {
 
     ORBOdometry::ORBOdometry() {
-        m_orb = cv::ORB::create(1000, 1.2f, 8, 15, 0, 2, cv::ORB::HARRIS_SCORE, 15);
-        m_matcher = cv::FlannBasedMatcher();
+        m_orb = cv::ORB::create(250, 1.2f, 12, 60, 0, 2, cv::ORB::HARRIS_SCORE, 60);
+        m_matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
     }
 
     void ORBOdometry::feature_detection(cv::Mat frame) {
@@ -14,21 +14,23 @@ namespace nav {
         cv::Mat gray;
         cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
         m_features.clear();
+        // m_features.reserve(250);
         m_descriptors = cv::Mat();
-        m_orb->detectAndCompute(gray, cv::Mat(), m_features, m_descriptors);
-        m_descriptors.convertTo(m_descriptors, CV_32F);
+        m_orb->detect(gray, m_features);
+        std::cout << gray.size() << "\n";
+        m_orb->compute(gray, m_features, m_descriptors);
     }
 
     std::pair<ORBOdometry::FeatureVector, ORBOdometry::FeatureVector> ORBOdometry::feature_matching(cv::Mat frame, const FeatureVector &points, bool draw) {
         FeatureVector new_keypoints;
         cv::Mat new_descriptors;
+        new_descriptors.resize(640);
         cv::Mat gray_mat;
         std::vector<cv::DMatch> matches;
         cvtColor(frame, gray_mat, cv::COLOR_BGR2GRAY);
         m_orb->detectAndCompute(gray_mat, cv::Mat(), new_keypoints, new_descriptors);
 
-        new_descriptors.convertTo(new_descriptors, CV_32F);
-        m_matcher.match(m_descriptors, new_descriptors, matches);
+        m_matcher->match(m_descriptors, new_descriptors, matches);
         std::sort(matches.begin(), matches.end(), [](const cv::DMatch& a, const cv::DMatch& b) {
             return a.distance < b.distance;
         });

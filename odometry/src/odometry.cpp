@@ -33,17 +33,20 @@ namespace nav {
 
         cv::Mat H = p1_mat.t() * p2_mat;
 
-        cv::Mat U, Vt, _;
-        cv::SVD::compute(H, _, U, Vt);
-
-        cv::Mat R = Vt.t() * U.t();
-        if (determinant(R) < 0) {
-            Vt.at<double>(2) *= -1;
-            R = Vt.t() * U.t();
-        }
-        cv::Mat t = cv::Mat(p2_mean) - R * cv::Mat(p1_mean);
-
-        return { - t.at<float>(0, 0), t.at<float>(1, 0) * m_svd_mode};
+        // cv::Mat U, Vt, _;
+        // cv::SVD::compute(H, _, U, Vt);
+        //
+        // cv::Mat R = Vt.t() * U.t();
+        // if (determinant(R) < 0) {
+        //     R.col(2) *= -1;
+        //
+        // }
+        // cv::Mat t = cv::Mat(p2_mean) - R * cv::Mat(p1_mean);
+        //
+        //
+        // return { -t.at<float>(0, 0) * m_svd_mode , t.at<float>(1, 0) * m_svd_mode};
+        auto r = p2_mean - p1_mean;
+        return {-r.x, r.y};
     }
 
 

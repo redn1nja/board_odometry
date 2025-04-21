@@ -39,6 +39,7 @@ void exp(std::ifstream& file) {
         att2.roll = attitude.roll;
         att2.pitch = attitude.pitch;
         att2.yaw = attitude.yaw;
+        std::cout << "Attitude: " << att.str() << "\n" << "Madgwick: " << att2.str() << "\n";
         att-= att2;
         std::cout << "Diff: " << att.str() << "\n";
     }

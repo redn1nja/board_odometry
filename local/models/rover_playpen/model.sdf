@@ -1,7 +1,12 @@
 <sdf version="1.7">
 <model name="rover_playpen">
 
-
+    <include>
+        <name>ground plane</name>
+        <static>1</static>
+        <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/ground plane</uri>
+        <pose>0 0 0 0 0 0</pose>
+    </include>
 
     <include>
         <name>rocky asphalt 20x20</name>

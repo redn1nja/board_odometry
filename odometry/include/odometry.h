@@ -76,7 +76,7 @@ namespace nav {
         [[nodiscard]] cv::Vec2d compute_average_feature_offset(const FeatureVector& ref_features) const ;
 
         cv::Ptr<cv::FeatureDetector> m_orb;
-        cv::FlannBasedMatcher m_matcher;
+        cv::Ptr<cv::BFMatcher> m_matcher;
         cv::Mat m_descriptors;
 
     };
