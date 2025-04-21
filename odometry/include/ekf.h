@@ -12,7 +12,7 @@ namespace nav {
             cv::Mat yaw = (cv::Mat_<double>(3, 3) << cos(attitude.yaw), -sin(attitude.yaw), 0, sin(attitude.yaw), cos(attitude.yaw), 0, 0, 0, 1);
             cv::Mat pitch = (cv::Mat_<double>(3, 3) << 1, 0, 0, 0, cos(attitude.pitch), -sin(attitude.pitch), 0, sin(attitude.pitch), cos(attitude.pitch));
             cv::Mat roll = (cv::Mat_<double>(3, 3) << cos(attitude.roll), 0, sin(attitude.roll), 0, 1, 0, -sin(attitude.roll), 0, cos(attitude.roll));
-            R *= (yaw * pitch * roll);
+            R *= (roll * pitch * yaw);
 
             cv::Mat acc_mat = cv::Mat(acc).reshape(1);
             cv::Mat acc_rotated = R * acc_mat;

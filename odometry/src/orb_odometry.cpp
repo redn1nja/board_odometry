@@ -50,7 +50,8 @@ namespace nav {
         std::transform(matches.begin(), matches.end(), std::back_inserter(new_points_2d),
             [&new_keypoints](const cv::DMatch& p) { return new_keypoints[p.trainIdx].pt; });
 
-        cv::Mat H = findHomography(points_2d, new_points_2d, cv::RANSAC, 3, inliers_mask);
+
+        cv::Mat H = cv::estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 3);
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
                 good_matches.push_back(matches[i]);
@@ -59,6 +60,16 @@ namespace nav {
                 good_descriptors.push_back(m_descriptors.row(matches[i].queryIdx));
             }
         }
+
+        // cv::Mat H = findHomography(points_2d, new_points_2d, cv::RANSAC, 3, inliers_mask);
+        // for (size_t i = 0; i < inliers_mask.rows; i++) {
+        //     if (inliers_mask.at<uchar>(i)) {
+        //         good_matches.push_back(matches[i]);
+        //         new_keypoints_filtered.push_back(new_keypoints[matches[i].trainIdx]);
+        //         points_filtered.push_back(points[matches[i].queryIdx]);
+        //         good_descriptors.push_back(m_descriptors.row(matches[i].queryIdx));
+        //     }
+        // }
 
         if(draw) {
             drawMatches(m_frame, points, frame, new_keypoints

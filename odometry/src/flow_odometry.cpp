@@ -46,7 +46,7 @@ namespace nav {
         FeatureVector inliers_old;
         FeatureVector inliers_new;
 
-        cv::Mat H = findHomography(good_old, good_new, cv::RANSAC, 3, inliers_mask);
+        cv::Mat H = cv::estimateAffinePartial2D(good_old, good_new, inliers_mask, cv::RANSAC, 3);
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
                 inliers_old.push_back(good_old[i]);

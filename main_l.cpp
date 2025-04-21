@@ -68,7 +68,7 @@ double eucldean(const cv::Vec2d& a, const cv::Vec2d& b) {
 template <typename T>
 void experiment2(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav::SVD_MODE s, cv::VideoCapture& cap, std::ifstream& file) {
     cv::Mat frame;
-    cv::Mat Q = (cv::Mat_<double>(2, 2) << 0.2755, 0, 0, 0.2755);
+    cv::Mat Q = (cv::Mat_<double>(2, 2) << 0.35, 0, 0, 0.275);
     cv::Mat R = (cv::Mat_<double>(2, 2) << 0.5, 0, 0, 0.5);
     nav::ImageProc<T> processor(Q, R, false);
     processor.set_modes(r, p, s);
@@ -113,7 +113,7 @@ void experiment2(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, na
 template <typename T>
 void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav::SVD_MODE s, cv::VideoCapture& cap, std::ifstream& file) {
     cv::Mat frame;
-    cv::Mat Q = (cv::Mat_<double>(2,2) << 0.8, 0, 0, 0.2);
+    cv::Mat Q = (cv::Mat_<double>(2,2) << 1, 0, 0, 0.225);
     cv::Mat R = (cv::Mat_<double>(2,2) << 0.5, 0, 0, 0.5);
     nav::ImageProc<T> processor(Q, R, false);
     processor.set_modes(r, p, s);
@@ -126,7 +126,7 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
     double dt = 0;
     int i = 0;
     size_t start_it = 100;
-    size_t stop_it = 900;
+    size_t stop_it = 880;
     while (cap.read(frame)) {
 
         try {
@@ -149,7 +149,8 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             else if (i < 900) {
                 data.attitude.yaw = data.attitude.yaw + M_PI_2 + (M_PI / 12);
             }
-            cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, data.lin_acc.z};
+            // data.attitude.yaw += M_PI_2;
+            cv::Vec3d acceleratiion = {-data.lin_acc.x, -data.lin_acc.y, -data.lin_acc.z};
             cv::Vec2d gt = {data.offset.x, data.offset.y};
             processor.calclulate_offsets(frame, data.attitude, acceleratiion, dt, data.offset.z);
             std::cout << i << "th Total Offset: " << processor.total_offset() << ", actual coordinates: " <<
@@ -189,7 +190,7 @@ void full_exp(params p, const std::string& cap_p, const std::string& file_p, con
         std::cerr << "Error opening file\n";
         return;
     }
-    experiment2<T>(out_file, p.r, p.p, p.s, cap, file);
+    experiment<T>(out_file, p.r, p.p, p.s, cap, file);
 
     file.close();
     cap.release();
@@ -207,8 +208,8 @@ int main(int argc, char** argv) {
     std::string out_path = argv[3];
     // params p_n {nav::ROLL_MODE::ROLL_POSITIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_NEGATIVE};
     params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_POSITIVE , nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_test.txt");
-    full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_test.txt");
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_test2.txt");
+    full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_test2.txt");
 
     return 0;
 

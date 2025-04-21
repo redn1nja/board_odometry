@@ -46,7 +46,7 @@ namespace nav {
         //
         // return { -t.at<float>(0, 0) * m_svd_mode , t.at<float>(1, 0) * m_svd_mode};
         auto r = p2_mean - p1_mean;
-        return {-r.x, r.y};
+        return {r.x, r.y};
     }
 
 
