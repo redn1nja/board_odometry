@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Seryvko"
+  given-names: "Ostap"
+title: "Autonomous Navigation of Aerial vehicles in GNSS-denied environments using Sensor Fusion"
+version: 0.1.0
+date-released: 2025-05-28
+url: "https://github.com/redn1nja/board_odometry" 

@@ -42,18 +42,9 @@ struct Data {
 
 constexpr std::string_view dev = "/dev/ttyACM0";
 
-static inline double rotate(double ang) {
+static double rotate(double ang) {
     return std::fmod(ang + 2 * M_PI, 2 * M_PI) - M_PI;
 }
-
-static inline double wrap(double ang, double max) {
-    return std::fmod(max + std::fmod(ang, max), max);
-}
-
-static inline double wrap_pi(double ang) {
-    return -M_PI + wrap(ang + M_PI, 2 * M_PI);
-}
-
 
 void signalHandler(int signum) {
     std::cout << "\nSIGINT received. Shutting down gracefully.\n";
@@ -126,7 +117,7 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
     double dt = 0;
     int i = 0;
     size_t start_it = 100;
-    size_t stop_it = 880;
+    size_t stop_it = 850;
     while (cap.read(frame)) {
 
         try {

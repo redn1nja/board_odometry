@@ -17,7 +17,6 @@ namespace nav {
         // m_features.reserve(250);
         m_descriptors = cv::Mat();
         m_orb->detect(gray, m_features);
-        std::cout << gray.size() << "\n";
         m_orb->compute(gray, m_features, m_descriptors);
     }
 
@@ -50,7 +49,6 @@ namespace nav {
         std::transform(matches.begin(), matches.end(), std::back_inserter(new_points_2d),
             [&new_keypoints](const cv::DMatch& p) { return new_keypoints[p.trainIdx].pt; });
 
-
         cv::Mat H = cv::estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 3);
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
@@ -61,21 +59,10 @@ namespace nav {
             }
         }
 
-        // cv::Mat H = findHomography(points_2d, new_points_2d, cv::RANSAC, 3, inliers_mask);
-        // for (size_t i = 0; i < inliers_mask.rows; i++) {
-        //     if (inliers_mask.at<uchar>(i)) {
-        //         good_matches.push_back(matches[i]);
-        //         new_keypoints_filtered.push_back(new_keypoints[matches[i].trainIdx]);
-        //         points_filtered.push_back(points[matches[i].queryIdx]);
-        //         good_descriptors.push_back(m_descriptors.row(matches[i].queryIdx));
-        //     }
-        // }
-
         if(draw) {
             drawMatches(m_frame, points, frame, new_keypoints
                 ,good_matches, m_draw_frame);
         }
-        std::cout << good_matches.size() << "\n";
         m_descriptors = std::move(good_descriptors);
         return {points_filtered, new_keypoints_filtered};
     }
@@ -105,15 +92,15 @@ namespace nav {
 
     cv::Vec2d ORBOdometry::get_offset(const FeatureVector& p1, const FeatureVector& p2) {
 
-        std::vector<cv::Point3f> p1_3d;
-        std::vector<cv::Point3f> p2_3d;
+        std::vector<cv::Point2f> p1_2d;
+        std::vector<cv::Point2f> p2_2d;
         ptrdiff_t feature_size = static_cast<ptrdiff_t>(std::min(p1.size(), p2.size()));
-        std::transform(p1.begin(), p1.begin() + feature_size, std::back_inserter(p1_3d),
-            [](const cv::KeyPoint& p) { return cv::Point3f(p.pt.x, p.pt.y, 0); });
-        std::transform(p2.begin(), p2.begin() + feature_size, std::back_inserter(p2_3d),
-            [](const cv::KeyPoint& p) { return cv::Point3f(p.pt.x, p.pt.y, 0); });
+        std::transform(p1.begin(), p1.begin() + feature_size, std::back_inserter(p1_2d),
+            [](const cv::KeyPoint& p) { return cv::Point2f(p.pt.x, p.pt.y); });
+        std::transform(p2.begin(), p2.begin() + feature_size, std::back_inserter(p2_2d),
+            [](const cv::KeyPoint& p) { return cv::Point2f(p.pt.x, p.pt.y); });
 
-        return SVD_offset(p1_3d, p2_3d);
+        return SVD_offset(p1_2d, p2_2d);
     }
 
 

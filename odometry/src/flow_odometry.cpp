@@ -63,26 +63,12 @@ namespace nav {
     }
 
     cv::Vec2d FlowOdometry::get_offset(const FeatureVector &p1, const FeatureVector &p2) {
-
-        std::vector<cv::Point3f> p1_3d;
-        std::vector<cv::Point3f> p2_3d;
-        ptrdiff_t feature_size = static_cast<ptrdiff_t>(std::min(p1.size(), p2.size()));
-        std::transform(p1.begin(), p1.begin() + feature_size, std::back_inserter(p1_3d),
-            [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
-        std::transform(p2.begin(), p2.begin() + feature_size, std::back_inserter(p2_3d),
-            [](const cv::Point2f& p) { return cv::Point3f(p.x, p.y, 0); });
-
-       return SVD_offset(p1_3d, p2_3d);
+        auto p1_2d = std::vector<cv::Point2f>(p1.begin(), p1.end());
+        auto p2_2d = std::vector<cv::Point2f>(p2.begin(), p2.end());
+       return SVD_offset(p1_2d, p2_2d);
     }
 
-    cv::Vec2d FlowOdometry::compute_average_feature_offset(const FeatureVector &ref_features) {
-        cv::Vec2d offset(0, 0);
-        for (const auto& feature : ref_features) {
-            offset += cv::Vec2d(feature.x, feature.y);
-        }
-        offset /= static_cast<double>(ref_features.size());
-        return offset;
-    }
+
 
 
 }// namespace nav

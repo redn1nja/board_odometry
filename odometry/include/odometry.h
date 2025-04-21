@@ -38,7 +38,7 @@ namespace nav {
         void set_svd_mode(SVD_MODE mode) { m_svd_mode = mode; }
     protected:
         virtual void feature_detection(cv::Mat frame) = 0;
-        cv::Vec2d SVD_offset(std::vector<cv::Point3f>& p1, std::vector<cv::Point3f>& p2);
+        cv::Vec2d SVD_offset(std::vector<cv::Point2f>& p1, std::vector<cv::Point2f>& p2);
         void draw_frame() const;
         cv::Vec2d m_offset;
         cv::Mat m_frame;

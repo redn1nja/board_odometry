@@ -45,13 +45,8 @@ namespace nav {
             m_odometry.process_frame(corrected_frame, m_draw);
             auto odometry = pixel_to_meter(m_odometry.offset(), altitude);
             auto corrected = m_ekf.step(acceleration, odometry, attitude, dt);
-
             m_total_offset += (corrected * dt);
-            std::cout << "Raw odometry: " << odometry << " Corrected odometry: " << corrected << "\n";
             return corrected * dt;
-            m_total_offset += odometry;
-            std::cout << "Raw odometry: " << odometry << " Corrected odometry: " << m_total_offset << "\n";
-            return odometry;
 
         }
         cv::Vec2d pixel_to_meter(const cv::Vec2d& offset, double altitude) {
