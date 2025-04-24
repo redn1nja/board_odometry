@@ -1,6 +1,8 @@
 #ifndef PROCESSOR_H
 #define PROCESSOR_H
 
+#include <angular.h>
+
 #include "odometry.h"
 #include "correction.h"
 #include "ekf.h"
@@ -27,24 +29,45 @@ namespace nav {
         PITCH_MODE m_pitch_mode = PITCH_MODE::PITCH_POSITIVE;
         SVD_MODE m_svd_mode = SVD_MODE::SVD_POSITIVE;
 
-        bool is_collinear(const cv::Vec2d& a, const cv::Vec2d& b) {
-            return std::abs(a[0] * b[1] - a[1] * b[0]) < 1e-6;
-        }
-
     public:
-        ImageProc(cv::Mat Q, cv::Mat R, bool draw) {
+        ImageProc(cv::Mat Q, cv::Mat R, bool draw, double yaw = 0.0) {
             m_ekf.set_QR(Q, R);
             m_draw = draw;
+            m_odometry.set_R(yaw);
         }
 
         void set_start_offset(const cv::Vec2d& offset) {
             m_total_offset = offset;
         }
-        cv::Vec2d calclulate_offsets(cv::Mat frame, const ImageCorrection::Attitude& attitude, const cv::Vec3d& acceleration, double dt, double altitude) {
+
+        void set_odom_R (double yaw) {
+            m_odometry.set_R(yaw);
+        }
+
+        double R() { return m_odometry.R_angle();}
+
+        cv::Vec2d calclulate_offsets(cv::Mat frame, ImageCorrection::Attitude& attitude, const cv::Vec3d& acceleration, double dt, double altitude) {
             auto corrected_frame = m_correction.transform_frame(frame, attitude);
             m_odometry.process_frame(corrected_frame, m_draw);
-            auto odometry = pixel_to_meter(m_odometry.offset(), altitude);
+            cv::Vec2d odometry = m_odometry.offset();
+            odometry = pixel_to_meter(odometry, altitude);
+            cv::Mat odometry_mat = cv::Mat(odometry);
+            attitude.yaw = m_odometry.R_angle();
+            attitude.roll = attitude.roll * m_roll_mode;
+            attitude.pitch = attitude.pitch * m_pitch_mode;
+
+
+            cv::Mat R = (cv::Mat_<double>(2, 2) << std::cos(attitude.yaw), -std::sin(attitude.yaw),
+                std::sin(attitude.yaw), std::cos(attitude.yaw));
+            odometry_mat = (R.t() * m_odometry.last_R())* odometry_mat;
+            odometry = cv::Vec2d(odometry_mat.at<double>(0, 0), odometry_mat.at<double>(1, 0));
+            if (odometry[0] == 0 && odometry[1] == 0) {
+                std::cout << "Zero odometry\n";
+                return odometry;
+            }
+
             auto corrected = m_ekf.step(acceleration, odometry, attitude, dt);
+            std::cout << "Raw odometry: " << odometry << ", corrected: " << corrected * dt << ", ratio: " << (corrected*dt).div(odometry) << "\n";
             m_total_offset += (corrected * dt);
             return corrected * dt;
 

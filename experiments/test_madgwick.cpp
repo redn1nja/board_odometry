@@ -3,31 +3,47 @@
 #include "csv.h"
 #include <fstream>
 #include "processor.h"
+#include "opencv2/opencv.hpp"
+#include "angular.h"
 
 void exp(std::ifstream& file) {
     cv::RNG rng(12345);
     IMUStamped data;
     std::string line;
-    std::array<std::string, 15> header;
+    std::array<std::string, 16> header;
     CommaSeparatedReader::read(file, header[0], header[1], header[2], header[3],
         header[4], header[5], header[6], header[7],
-        header[8], header[9], header[10], header[11], header[12]);
+        header[8], header[9], header[10], header[11], header[12], header[13], header[14], header[15]);
+    double time = 0;
+    double base_yaw = 0;
+    int i = 0;
     while (file >> line) {
-
+        i++;
         std::stringstream ss(line);
         nav::ImageCorrection::Attitude att;
-        double time;
-        int _ ;
-        CommaSeparatedReader::read(ss, _, time, att.roll, att.pitch,
+        double dt;
+        int _1,_2,_3 ;
+        CommaSeparatedReader::read(ss, dt, _1, _2,_3 ,att.roll, att.pitch, att.yaw,
             data.imu.accX, data.imu.accY, data.imu.accZ,
-            data.imu.gyroX, data.imu.gyroY, data.imu.gyroZ);
-        data.imu.accX = -data.imu.accX;
-        data.imu.accY = -data.imu.accY;
-        data.imu.accZ= -data.imu.accZ;
+            data.imu.gyroX, data.imu.gyroY, data.imu.gyroZ, data.imu.magX, data.imu.magY, data.imu.magZ);
+        dt*=2;
+        att.roll = -rotate(att.roll);
+        if (base_yaw == 0) {
+            base_yaw = att.yaw;
+        }
+        time+=dt;
+        // data.imu.accX = -data.imu.accX;
+        // data.imu.accY = -data.imu.accY;
+        data.imu.accZ = -data.imu.accZ;
 
-        data.imu.gyroX = -data.imu.gyroX + rng.gaussian(0.2);
-        data.imu.gyroY = -data.imu.gyroY + rng.gaussian(0.2);
-        data.imu.gyroZ = -data.imu.gyroZ + rng.gaussian(0.2);
+
+        // data.imu.gyroX = -data.imu.gyroX;
+        // data.imu.gyroY = -data.imu.gyroY;
+        data.imu.gyroZ = -data.imu.gyroZ;
+
+        data.imu.magX = -data.imu.magX;
+        data.imu.magY = -data.imu.magY;
+        data.imu.magZ = -data.imu.magZ;
 
 
         data.time.sec = static_cast<uint32_t>(time);
@@ -38,10 +54,13 @@ void exp(std::ifstream& file) {
         nav::ImageCorrection::Attitude att2;
         att2.roll = attitude.roll;
         att2.pitch = attitude.pitch;
-        att2.yaw = attitude.yaw;
+        att2.yaw = attitude.yaw ;
         std::cout << "Attitude: " << att.str() << "\n" << "Madgwick: " << att2.str() << "\n";
         att-= att2;
-        std::cout << "Diff: " << att.str() << "\n";
+        std::cout << "Diff: " << att.str() << "\n\n";
+        if (i > 800) {
+            break;
+        }
     }
 }
 

@@ -1,6 +1,7 @@
 #include "odometry.h"
 #include <numeric>
 
+
 namespace nav {
 
     void FlowOdometry::process_frame(cv::Mat frame, bool draw) {
@@ -46,11 +47,12 @@ namespace nav {
         FeatureVector inliers_old;
         FeatureVector inliers_new;
 
-        cv::Mat H = cv::estimateAffinePartial2D(good_old, good_new, inliers_mask, cv::RANSAC, 3);
+        cv::Mat _ = cv::estimateAffinePartial2D(good_old, good_new, inliers_mask, cv::RANSAC, 3);
+
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
                 inliers_old.push_back(good_old[i]);
-                inliers_new.push_back(good_new[i]);
+                inliers_new.push_back(new_points[i]);
             }
         }
         if (draw) {
@@ -63,8 +65,8 @@ namespace nav {
     }
 
     cv::Vec2d FlowOdometry::get_offset(const FeatureVector &p1, const FeatureVector &p2) {
-        auto p1_2d = std::vector<cv::Point2f>(p1.begin(), p1.end());
-        auto p2_2d = std::vector<cv::Point2f>(p2.begin(), p2.end());
+        auto p1_2d = std::vector(p1.begin(), p1.end());
+        auto p2_2d = std::vector(p2.begin(), p2.end());
        return SVD_offset(p1_2d, p2_2d);
     }
 

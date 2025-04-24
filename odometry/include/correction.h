@@ -57,8 +57,8 @@ namespace nav {
                 m_D = D.clone();
                 fx = K.at<double>(0, 0);
                 fy = K.at<double>(1, 1);
-                width = 1440;
-                height = 1080;
+                width = 720;
+                height = 540;
                 hfov = 2 * std::atan(width / (2 * fx));
                 vfov = 2 * std::atan(height / (2 * fy));
 
@@ -86,10 +86,9 @@ namespace nav {
         [[nodiscard]] Attitude get_expontial_average() const;
         [[nodiscard]] Attitude get_mov_average() const;
 #ifndef DATASET_K
-
         static inline CameraParams m_K{640, 480, 1.57, 1.29};
 #else
-        static inline CameraParams m_K{(cv::Mat_<double>(3,3) << 854.383024, 0, 780.324522, 0, 853.285954, 520.690672, 0, 0, 1),
+        static inline CameraParams m_K{(cv::Mat_<double>(3,3) << 854.383024/2, 0, 780.324522/2, 0, 853.285954/2, 520.690672/2, 0, 0, 1),
                 (cv::Mat_<double>(1, 4) << -0.07937700, 0.02228435, -0.03852023, 0.01346873)};
 #endif
 

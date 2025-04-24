@@ -33,9 +33,13 @@ namespace nav {
 
     class Odometry {
     public:
+        Odometry();
         virtual ~Odometry() = default;
         [[nodiscard]] cv::Vec2d offset() { return m_offset;}
         void set_svd_mode(SVD_MODE mode) { m_svd_mode = mode; }
+        void set_R(double yaw);
+        [[nodiscard]] double R_angle() const { return atan2(m_R.at<double>(1, 0), m_R.at<double>(0, 0)); }
+        [[nodiscard]] cv::Mat last_R() const { return m_last_R;}
     protected:
         virtual void feature_detection(cv::Mat frame) = 0;
         cv::Vec2d SVD_offset(std::vector<cv::Point2f>& p1, std::vector<cv::Point2f>& p2);
@@ -44,7 +48,7 @@ namespace nav {
         cv::Mat m_frame;
         cv::Mat m_draw_frame;
         SVD_MODE m_svd_mode = SVD_MODE::SVD_POSITIVE;
-
+        cv::Mat m_R, m_last_R;
     };
 
     class FlowOdometry : public Odometry {
@@ -66,18 +70,22 @@ namespace nav {
     public:
         using FeatureVector = std::vector<cv::KeyPoint>;
         ORBOdometry();
+        ORBOdometry(double start_yaw);
         ~ORBOdometry() override = default;
         void feature_detection(cv::Mat frame) override;
         void process_frame(cv::Mat frame, bool draw = true);
+
     private:
         FeatureVector m_features;
-        [[nodiscard]] std::pair<FeatureVector, FeatureVector> feature_matching(cv::Mat frame, const FeatureVector& points, bool draw);
+        [[nodiscard]] std::pair<FeatureVector, FeatureVector> feature_matching(cv::Mat frame, FeatureVector& points, bool draw);
         [[nodiscard]] cv::Vec2d get_offset(const FeatureVector& p1, const FeatureVector& p2) ;
         [[nodiscard]] cv::Vec2d compute_average_feature_offset(const FeatureVector& ref_features) const ;
 
         cv::Ptr<cv::FeatureDetector> m_orb;
         cv::Ptr<cv::BFMatcher> m_matcher;
         cv::Mat m_descriptors;
+
+
 
     };
 }//namespace nav

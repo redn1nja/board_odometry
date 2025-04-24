@@ -8,6 +8,13 @@ namespace nav {
         m_matcher = cv::BFMatcher::create(cv::NORM_HAMMING);
     }
 
+    ORBOdometry::ORBOdometry(double start_yaw) : ORBOdometry() {
+        set_R(start_yaw);
+    }
+
+
+
+
     void ORBOdometry::feature_detection(cv::Mat frame) {
         frame.copyTo(m_frame);
         frame.copyTo(m_draw_frame);
@@ -20,19 +27,15 @@ namespace nav {
         m_orb->compute(gray, m_features, m_descriptors);
     }
 
-    std::pair<ORBOdometry::FeatureVector, ORBOdometry::FeatureVector> ORBOdometry::feature_matching(cv::Mat frame, const FeatureVector &points, bool draw) {
+    std::pair<ORBOdometry::FeatureVector, ORBOdometry::FeatureVector> ORBOdometry::feature_matching(cv::Mat frame, FeatureVector &points, bool draw) {
         FeatureVector new_keypoints;
         cv::Mat new_descriptors;
-        new_descriptors.resize(640);
         cv::Mat gray_mat;
         std::vector<cv::DMatch> matches;
         cvtColor(frame, gray_mat, cv::COLOR_BGR2GRAY);
         m_orb->detectAndCompute(gray_mat, cv::Mat(), new_keypoints, new_descriptors);
 
         m_matcher->match(m_descriptors, new_descriptors, matches);
-        std::sort(matches.begin(), matches.end(), [](const cv::DMatch& a, const cv::DMatch& b) {
-            return a.distance < b.distance;
-        });
 
         cv::Mat inliers_mask;
         std::vector<cv::DMatch> good_matches;
@@ -49,7 +52,8 @@ namespace nav {
         std::transform(matches.begin(), matches.end(), std::back_inserter(new_points_2d),
             [&new_keypoints](const cv::DMatch& p) { return new_keypoints[p.trainIdx].pt; });
 
-        cv::Mat H = cv::estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 3);
+        cv::Mat _ = estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 4);
+
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
                 good_matches.push_back(matches[i]);
@@ -57,11 +61,6 @@ namespace nav {
                 points_filtered.push_back(points[matches[i].queryIdx]);
                 good_descriptors.push_back(m_descriptors.row(matches[i].queryIdx));
             }
-        }
-
-        if(draw) {
-            drawMatches(m_frame, points, frame, new_keypoints
-                ,good_matches, m_draw_frame);
         }
         m_descriptors = std::move(good_descriptors);
         return {points_filtered, new_keypoints_filtered};
