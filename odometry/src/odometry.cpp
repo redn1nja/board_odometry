@@ -43,8 +43,12 @@ namespace nav {
 
         cv::SVD::compute(H, W, U, Vt);
         cv::Mat R = Vt.t() * U.t();
+
         R.convertTo(R, CV_64F);
 
+        if (std::fabs(std::atan2(R.at<double>(1, 0), R.at<double>(0, 0))) > M_PI_2/2){
+            R = cv::Mat::eye(2, 2, CV_64F);
+        }
 
 
         cv::Vec2d center_v(m_frame.cols/2, m_frame.rows/2);
@@ -76,7 +80,7 @@ namespace nav {
         double x = t.at<double>(0, 0);
         double y = t.at<double>(1, 0);
 
-        return { -x , y};
+        return { -x , -y};
 
     }
 

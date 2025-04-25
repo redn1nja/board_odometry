@@ -1,5 +1,6 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
+#include "../external/madgwick/Core/Inc/imu_filter/imu_data.h"
 
 struct LinAcc {
     double x;
@@ -26,6 +27,14 @@ struct Data {
     nav::ImageCorrection::Attitude attitude;
     LinAcc lin_acc;
     AngVel ang_vel;
+    Offset offset;
+};
+
+struct Data2 {
+    static inline size_t id=1;
+    double ts;
+    nav::ImageCorrection::Attitude attitude;
+    IMUStamped imu;
     Offset offset;
 };
 

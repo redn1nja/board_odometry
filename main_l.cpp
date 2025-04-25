@@ -29,6 +29,7 @@ void experiment2(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, na
     CommaSeparatedReader::read(file, header[0], header[1], header[2], header[3],
                                header[4], header[5], header[6], header[7],
                                header[8], header[9], header[10], header[11], header[12], header[13]);
+
     out_file << "[\n";
     double dt = 0;
     double last_stamp = 0;
@@ -97,11 +98,6 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                 processor.set_start_offset({data.offset.x, data.offset.y});
                 processor.set_odom_R(0.15);
             }
-            // if(i > 900 && i < 1200 ) {
-            //     cv::imshow("Frame", frame);
-            //     cv::waitKey(30);
-            // }
-            // data.attitude.roll = rotate(data.attitude.roll);
             auto yaw = data.attitude.yaw;
             cv::Vec3d acceleratiion = {data.lin_acc.x, data.lin_acc.y, -data.lin_acc.z};
             cv::Vec2d gt = {data.offset.x, data.offset.y};
@@ -160,7 +156,6 @@ int main(int argc, char** argv) {
     std::string cap_name = argv[1];
     std::string file_name = argv[2];
     std::string out_path = argv[3];
-    // params p_n {nav::ROLL_MODE::ROLL_POSITIVE, nav::PITCH_MODE::PITCH_POSITIVE, nav::SVD_MODE::SVD_NEGATIVE};
     params p { nav::ROLL_MODE::ROLL_POSITIVE, nav::PITCH_MODE::PITCH_POSITIVE , nav::SVD_MODE::SVD_POSITIVE};
     full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_testaffine.txt");
     // full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_test2affine.txt");

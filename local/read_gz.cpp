@@ -57,6 +57,7 @@ std::ofstream output;
 cv::VideoWriter writer;
 volatile sig_atomic_t run = 1;
 std::atomic_bool image_rdy = false;
+std::atomic_bool imu_rdy = false;
 
 
 void signal_handler(int signum) {
@@ -87,6 +88,8 @@ void imu_callback(const gz::msgs::IMU& msg) {
     data.ang_vel.y = msg.angular_velocity().y();
     data.ang_vel.z = msg.angular_velocity().z();
 
+    imu_rdy = true;
+
 }
 
 void pose_callback(const gz::msgs::Pose_V& msg) {
@@ -109,24 +112,28 @@ int main(int argc, char** argv) {
     topics >> cam_topic >> imu_topic >> pose_topic;
     topics.close();
     gz::transport::Node node;
+    gz::transport::SubscribeOptions opts;
+    opts.SetMsgsPerSec(100);
     node.Subscribe<gz::msgs::Image>(cam_topic, camera_callback);
-    node.Subscribe<gz::msgs::IMU>(imu_topic, imu_callback);
+    node.Subscribe<gz::msgs::IMU>(imu_topic, imu_callback, opts);
     node.Subscribe<gz::msgs::Pose_V>(pose_topic, pose_callback);
-    CommaSeparatedWriter::write(output, "ID", "Stamp", "Roll", "Pitch", "Yaw", "LinAccX", "LinAccY", "LinAccZ",
+    CommaSeparatedWriter::write(output, "ID", "FrameRdy", "Stamp", "Roll", "Pitch", "Yaw", "LinAccX", "LinAccY", "LinAccZ",
                                 "AngVelX", "AngVelY", "AngVelZ", "PoseX", "PoseY", "PoseZ");
 
     auto start = get_current_time_fenced();
 
     while (run) {
-        if(image_rdy) {
+        if(imu_rdy) {
+            imu_rdy = false;
             auto now = get_current_time_fenced();
             data.ts = static_cast<double>(to_ms(now - start)) / 1000.0;
-            CommaSeparatedWriter::write(output, Data::id++, data.ts, data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
+            CommaSeparatedWriter::write(output, Data::id++, image_rdy, data.ts, data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
                                         data.lin_acc.x, data.lin_acc.y, data.lin_acc.z,
                                         data.ang_vel.x, data.ang_vel.y, data.ang_vel.z,
                                         data.offset.x, data.offset.y, data.offset.z);
-            image_rdy = false;
+            if (image_rdy) image_rdy = false;
         }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
     output.close();
     writer.release();

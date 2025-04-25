@@ -52,7 +52,7 @@ namespace nav {
         std::transform(matches.begin(), matches.end(), std::back_inserter(new_points_2d),
             [&new_keypoints](const cv::DMatch& p) { return new_keypoints[p.trainIdx].pt; });
 
-        cv::Mat _ = estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 4);
+        cv::Mat _ = estimateAffinePartial2D(points_2d, new_points_2d, inliers_mask, cv::RANSAC, 2);
 
         for (size_t i = 0; i < inliers_mask.rows; i++) {
             if (inliers_mask.at<uchar>(i)) {
