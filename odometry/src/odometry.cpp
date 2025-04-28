@@ -80,7 +80,7 @@ namespace nav {
         double x = t.at<double>(0, 0);
         double y = t.at<double>(1, 0);
 
-        return { -x , -y};
+        return { x , -y};
 
     }
 

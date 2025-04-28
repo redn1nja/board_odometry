@@ -67,9 +67,9 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             break;
         }
         case EXP_TYPE::DATASET:{
-            cv::Mat Q = (cv::Mat_<double>(2,2) << 0.12, 0, 0, 0.1);
-            cv::Mat R = (cv::Mat_<double>(2,2) << 0.075, 0, 0, 0.25);
-            processor = nav::ImageProc<T>(Q, R, true);
+            cv::Mat Q = (cv::Mat_<double>(2,2) << 0.1, 0, 0, 0.1);
+            cv::Mat R = (cv::Mat_<double>(2,2) << 0.15, 0, 0, 0.35);
+            processor = nav::ImageProc<T>(Q, R, false);
             processor.set_odom_R(0.3);
             break;
         }
@@ -80,11 +80,11 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
     CommaSeparatedWriter::write(out_file, "Total Offset X", "Total Offset Y",
                                             "Actual X", "Actual Y", "L2 error",
                                             "Roll", "Pitch", "Yaw",
-                                            "Actual Roll", "Actual Pitch", "Actual Yaw");
+                                            "Actual Roll", "Actual Pitch", "Actual Yaw", "Altitude");
     int i = 0;
     double time= 0;
-    size_t start_it = 400;
-    size_t stop_it = 750;
+    size_t start_it = 0;
+    size_t stop_it = -1;
     while (cap.read(frame)) {
         try {
             i++;
@@ -96,7 +96,7 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                 }
                 case EXP_TYPE::DATASET: {
                     data_dt = read_dataset(file);
-                    cv::resize(frame, frame, cv::Size(720, 540));
+                    // cv::resize(frame, frame, cv::Size(720, 540));
                     std::get<Data2>(data_dt).attitude.roll = -rotate(std::get<Data2>(data_dt).attitude.roll);
                     std::get<Data2>(data_dt).attitude.yaw = -std::get<Data2>(data_dt).attitude.yaw - M_PI/2;
 
@@ -108,27 +108,28 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             time+=dt;
             data.imu.time.sec = static_cast<uint32_t>(time);
             data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
-            madgwick_filter_update(&data.imu);
-            while (!frame_rdy) {
-                switch (type) {
-                    case EXP_TYPE::GAZEBO: {
-                        data_dt = read_gazebo(file);
-                        break;
-                    }
-                    case EXP_TYPE::DATASET: {
-                        data_dt = read_dataset(file);
-                        break;
-                    }
-                }
-                data = std::get<0>(data_dt);
-                dt = std::get<1>(data_dt);
-                frame_rdy = std::get<2>(data_dt);
-                time+=dt;
 
-                data.imu.time.sec = static_cast<uint32_t>(time);
-                data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
-                madgwick_filter_update(&data.imu);
-            }
+            madgwick_filter_update(&data.imu);
+            // while (!frame_rdy) {
+            //     switch (type) {
+            //         case EXP_TYPE::GAZEBO: {
+            //             data_dt = read_gazebo(file);
+            //             break;
+            //         }
+            //         case EXP_TYPE::DATASET: {
+            //             data_dt = read_dataset(file);
+            //             break;
+            //         }
+            //     }
+            //     data = std::get<0>(data_dt);
+            //     dt = std::get<1>(data_dt);
+            //     frame_rdy = std::get<2>(data_dt);
+            //     time+=dt;
+            //
+            //     data.imu.time.sec = static_cast<uint32_t>(time);
+            //     data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
+            //     madgwick_filter_update(&data.imu);
+            // }
             nav::ImageCorrection::Attitude gt_attitude = {data.attitude.roll, data.attitude.pitch, data.attitude.yaw};
 
             data.attitude.roll = data.imu.rpy.roll;
@@ -137,9 +138,15 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             if (i < start_it) {
                 continue;
             }
-            if (i == start_it ) {
+            if (std::abs(i - static_cast<int>(start_it)) <=1  ) {
                 processor.set_start_offset({data.offset.x, data.offset.y});
+                processor.set_odom_R(-data.attitude.yaw);
             }
+
+            // if (i % 2 == 0) {
+            //     continue;
+            // }
+
 
             cv::Vec3d acceleratiion = {-data.imu.imu.accX, data.imu.imu.accY, data.imu.imu.accZ};
             cv::Vec2d gt = {data.offset.x, data.offset.y};
@@ -151,7 +158,7 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             auto off = processor.total_offset();
             CommaSeparatedWriter::write(out_file, off[0], off[1], gt[0], gt[1], eucledean(off, gt),
                 data.attitude.roll, data.attitude.pitch, data.attitude.yaw,
-                gt_attitude.roll, gt_attitude.pitch, gt_attitude.yaw);
+                gt_attitude.roll, gt_attitude.pitch, gt_attitude.yaw, data.offset.z);
             if (i > stop_it) {
                 break;
             }
@@ -178,7 +185,7 @@ void full_exp(params p, const std::string& cap_p, const std::string& file_p, con
         std::cerr << "Error opening file\n";
         return;
     }
-    experiment<T>(out_file, p.r, p.p, p.s, cap, file, EXP_TYPE::DATASET);
+    experiment<T>(out_file, p.r, p.p, p.s, cap, file);
 
     file.close();
     cap.release();
@@ -196,8 +203,7 @@ int main(int argc, char** argv) {
     std::string file_name = argv[2];
     std::string out_path = argv[3];
     params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_NEGATIVE , nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "ORB_testMadgwick2.csv");
-    // full_exp<nav::FlowOdometry>(p, cap_name, file_name, out_path, "Flow_testMadgwick.txt");
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "3_4.csv");
 
     return 0;
 
