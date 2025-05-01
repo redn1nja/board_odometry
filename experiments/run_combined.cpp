@@ -5,7 +5,6 @@
 #include <serial.h>
 #include <thread>
 #include <fstream>
-#include <types.h>
 #include <processor.h>
 #include <filesystem>
 #include "csv.h"
@@ -13,7 +12,6 @@
 #include "angular.h"
 #include "madgwick.h"
 #include "structs.h"
-#include "ma_buf.h"
 
 enum class EXP_TYPE {
     GAZEBO,
@@ -67,8 +65,8 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             break;
         }
         case EXP_TYPE::DATASET:{
-            cv::Mat Q = (cv::Mat_<double>(2,2) << 0.1, 0, 0, 0.1);
-            cv::Mat R = (cv::Mat_<double>(2,2) << 0.15, 0, 0, 0.35);
+            cv::Mat Q = (cv::Mat_<double>(2,2) << 0.125, 0, 0, 0.15);
+            cv::Mat R = (cv::Mat_<double>(2,2) << 0.1, 0, 0, 0.35);
             processor = nav::ImageProc<T>(Q, R, false);
             processor.set_odom_R(0.3);
             break;
@@ -83,8 +81,8 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                                             "Actual Roll", "Actual Pitch", "Actual Yaw", "Altitude");
     int i = 0;
     double time= 0;
-    size_t start_it = 0;
-    size_t stop_it = -1;
+    size_t start_it = 400;
+    size_t stop_it = 750;
     while (cap.read(frame)) {
         try {
             i++;
@@ -96,10 +94,9 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                 }
                 case EXP_TYPE::DATASET: {
                     data_dt = read_dataset(file);
-                    // cv::resize(frame, frame, cv::Size(720, 540));
+                    cv::resize(frame, frame, cv::Size(720, 540));
                     std::get<Data2>(data_dt).attitude.roll = -rotate(std::get<Data2>(data_dt).attitude.roll);
                     std::get<Data2>(data_dt).attitude.yaw = -std::get<Data2>(data_dt).attitude.yaw - M_PI/2;
-
                     break;
                 }
 
@@ -110,26 +107,26 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
             data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
 
             madgwick_filter_update(&data.imu);
-            // while (!frame_rdy) {
-            //     switch (type) {
-            //         case EXP_TYPE::GAZEBO: {
-            //             data_dt = read_gazebo(file);
-            //             break;
-            //         }
-            //         case EXP_TYPE::DATASET: {
-            //             data_dt = read_dataset(file);
-            //             break;
-            //         }
-            //     }
-            //     data = std::get<0>(data_dt);
-            //     dt = std::get<1>(data_dt);
-            //     frame_rdy = std::get<2>(data_dt);
-            //     time+=dt;
-            //
-            //     data.imu.time.sec = static_cast<uint32_t>(time);
-            //     data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
-            //     madgwick_filter_update(&data.imu);
-            // }
+            while (!frame_rdy) {
+                switch (type) {
+                    case EXP_TYPE::GAZEBO: {
+                        data_dt = read_gazebo(file);
+                        break;
+                    }
+                    case EXP_TYPE::DATASET: {
+                        data_dt = read_dataset(file);
+                        break;
+                    }
+                }
+                data = std::get<0>(data_dt);
+                dt = std::get<1>(data_dt);
+                frame_rdy = std::get<2>(data_dt);
+                time+=dt;
+
+                data.imu.time.sec = static_cast<uint32_t>(time);
+                data.imu.time.msec = static_cast<uint16_t>((time - static_cast<double>(data.imu.time.sec))*1000);
+                madgwick_filter_update(&data.imu);
+            }
             nav::ImageCorrection::Attitude gt_attitude = {data.attitude.roll, data.attitude.pitch, data.attitude.yaw};
 
             data.attitude.roll = data.imu.rpy.roll;
@@ -143,9 +140,6 @@ void experiment(std::ostream& out_file, nav::ROLL_MODE r, nav::PITCH_MODE p, nav
                 processor.set_odom_R(-data.attitude.yaw);
             }
 
-            // if (i % 2 == 0) {
-            //     continue;
-            // }
 
 
             cv::Vec3d acceleratiion = {-data.imu.imu.accX, data.imu.imu.accY, data.imu.imu.accZ};
@@ -185,7 +179,7 @@ void full_exp(params p, const std::string& cap_p, const std::string& file_p, con
         std::cerr << "Error opening file\n";
         return;
     }
-    experiment<T>(out_file, p.r, p.p, p.s, cap, file);
+    experiment<T>(out_file, p.r, p.p, p.s, cap, file, EXP_TYPE::DATASET);
 
     file.close();
     cap.release();
@@ -203,7 +197,7 @@ int main(int argc, char** argv) {
     std::string file_name = argv[2];
     std::string out_path = argv[3];
     params p { nav::ROLL_MODE::ROLL_NEGATIVE, nav::PITCH_MODE::PITCH_NEGATIVE , nav::SVD_MODE::SVD_POSITIVE};
-    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "3_4.csv");
+    full_exp<nav::ORBOdometry>(p, cap_name, file_name, out_path, "A3_2.csv");
 
     return 0;
 

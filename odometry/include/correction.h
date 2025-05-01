@@ -81,10 +81,6 @@ namespace nav {
             }
         };
     private:
-        std::deque<Attitude> m_buffer;
-        void push_buffer(const Attitude& attitude);
-        [[nodiscard]] Attitude get_expontial_average() const;
-        [[nodiscard]] Attitude get_mov_average() const;
 #ifndef DATASET_K
         static inline CameraParams m_K{640, 480, 1.57, 1.29};
 #else

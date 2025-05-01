@@ -62,13 +62,12 @@ namespace nav {
             odometry_mat = (R.t() * m_odometry.last_R())* odometry_mat;
             odometry = cv::Vec2d(odometry_mat.at<double>(0, 0), odometry_mat.at<double>(1, 0));
             if (odometry[0] == 0 && odometry[1] == 0) {
-                std::cout << "Zero odometry\n";
+                std::cerr << "Zero odometry\n";
                 return odometry;
             }
 
             auto corrected = m_ekf.step(acceleration, odometry, attitude, dt);
-            std::cout << "Raw odometry: " << odometry << ", corrected: " << corrected * dt << ", ratio: " << (corrected*dt).div(odometry) << "\n";
-            m_total_offset += (corrected * dt);
+            m_total_offset += (odometry);
             return corrected * dt;
 
         }

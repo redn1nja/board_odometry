@@ -10,7 +10,7 @@ add_library(navigation SHARED
 
 target_include_directories(navigation PRIVATE ${OpenCV_INCLUDE_DIRS})
 include_directories(navigation PRIVATE include)
-#target_compile_definitions(navigation PUBLIC DATASET_K)
+target_compile_definitions(navigation PUBLIC DATASET_K)
 #target_compile_definitions(navigation PUBLIC USE_MA)
 target_link_libraries(navigation ${OpenCV_LIBS})
 

@@ -46,11 +46,6 @@ namespace nav {
 
         R.convertTo(R, CV_64F);
 
-        if (std::fabs(std::atan2(R.at<double>(1, 0), R.at<double>(0, 0))) > M_PI_2/2){
-            R = cv::Mat::eye(2, 2, CV_64F);
-        }
-
-
         cv::Vec2d center_v(m_frame.cols/2, m_frame.rows/2);
         cv::Mat center = cv::Mat(center_v);
 
@@ -72,15 +67,13 @@ namespace nav {
 
         p2_mean_mat = R.t() * p2_mean_mat;
 
-
-
         cv::Mat t = (p1_mean_mat - p2_mean_mat);
         m_R *= R;
         m_last_R = R;
         double x = t.at<double>(0, 0);
         double y = t.at<double>(1, 0);
 
-        return { x , -y};
+        return { -x , -y};
 
     }
 

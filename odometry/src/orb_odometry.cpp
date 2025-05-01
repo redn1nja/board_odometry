@@ -12,16 +12,12 @@ namespace nav {
         set_R(start_yaw);
     }
 
-
-
-
     void ORBOdometry::feature_detection(cv::Mat frame) {
         frame.copyTo(m_frame);
         frame.copyTo(m_draw_frame);
         cv::Mat gray;
         cvtColor(m_frame, gray, cv::COLOR_BGR2GRAY);
         m_features.clear();
-        // m_features.reserve(250);
         m_descriptors = cv::Mat();
         m_orb->detect(gray, m_features);
         m_orb->compute(gray, m_features, m_descriptors);
